@@ -74,6 +74,14 @@ class ItemRepository:
     async def delete_item(self, item_id: str) -> bool:
         result = await self.collection.delete_one({"_id": ObjectId(item_id)})
         return result.deleted_count > 0
+    
+    async def get_items_by_seller_id(self, seller_id: str) -> List[ItemResponse]:
+        cursor = self.collection.find({"seller_id": seller_id})
+        listings = []
+        async for doc in cursor:
+            doc["id"] = str(doc["_id"])
+            listings.append(ItemResponse(**doc))
+        return listings
 
 class ReservationRepository:
     def __init__(self, db: AsyncIOMotorDatabase):

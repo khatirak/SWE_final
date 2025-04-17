@@ -84,7 +84,8 @@ async def update_listing(
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_listing(
     item_id: str,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Delete a listing
@@ -94,7 +95,7 @@ async def delete_listing(
         db: Database connection
     """
     # Implementation placeholder
-    pass
+    return await repo.delete_item(item_id)
 
 @router.post("/{item_id}/images", response_model=ItemResponse)
 async def upload_images(
@@ -140,7 +141,8 @@ async def update_listing_status(
 async def get_user_listings(
     user_id: str,
     status: Optional[ListingStatus] = None,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Get all listings for a specific user
@@ -154,4 +156,4 @@ async def get_user_listings(
         List of user's listings
     """
     # Implementation placeholder
-    pass
+    return await repo.get_items_by_seller_id(user_id)
