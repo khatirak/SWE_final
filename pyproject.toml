@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "nyuad-bazaar"
+version = "0.1.0"
+description = "NYU Marketplace Platform"
+authors = ["Youssab <ywi1@nyu.edu>"]
+readme = "README.md"
+packages = [{include = "backend"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.109.2"
+uvicorn = "^0.27.1"
+motor = "^3.3.2"
+pydantic = "^2.6.1"
+python-multipart = "^0.0.9"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-dotenv = "^1.0.1"
+authlib = "^1.3.0"
+httpx = "^0.26.0"
+
+[tool.poetry.scripts]
+start = "uvicorn.main:main"
+start-prod = "uvicorn.main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api" 
