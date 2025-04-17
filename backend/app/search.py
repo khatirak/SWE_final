@@ -15,8 +15,8 @@ router = APIRouter(
 async def search_items(
     keyword: Optional[str] = None,
     category: Optional[ItemCategory] = None,
-    min_price: Optional[float] = None,
-    max_price: Optional[float] = None,
+    min_price: Optional[int] = None,
+    max_price: Optional[int] = None,
     condition: Optional[ItemCondition] = None,
     status: Optional[ListingStatus] = ListingStatus.AVAILABLE,
     tags: Optional[List[str]] = Query(None),

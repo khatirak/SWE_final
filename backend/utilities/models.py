@@ -43,7 +43,7 @@ class ItemBase(BaseModel):
     """Base model for marketplace items"""
     title: str = Field(..., min_length=1, max_length=100, description="Item title, max 100 characters [R-101]")
     description: str = Field(..., min_length=10, max_length=1000, description="Item description, max 200 words [R-102]")
-    price: float = Field(..., ge=0, description="Item price, must be zero or positive [R-103]")
+    price: int = Field(..., ge=0, description="Item price, must be zero or positive [R-103]")
     condition: ItemCondition = Field(..., description="Item condition [R-104]")
     category: ItemCategory = Field(..., description="Item category [R-105]")
     tags: List[str] = Field(default=[], description="Optional tags for better searchability")
@@ -57,7 +57,7 @@ class ItemUpdate(BaseModel):
     """Model for updating an existing item"""
     title: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, min_length=10, max_length=1000)
-    price: Optional[float] = Field(None, ge=0)
+    price: Optional[int] = Field(None, ge=0)
     condition: Optional[ItemCondition] = None
     category: Optional[ItemCategory] = None
     tags: Optional[List[str]] = None
@@ -158,8 +158,8 @@ class SearchFilters(BaseModel):
     """Model for search filters"""
     keyword: Optional[str] = None
     category: Optional[ItemCategory] = None
-    min_price: Optional[float] = None
-    max_price: Optional[float] = None
+    min_price: Optional[int] = None
+    max_price: Optional[int] = None
     condition: Optional[ItemCondition] = None
     status: Optional[ListingStatus] = ListingStatus.AVAILABLE
     tags: Optional[List[str]] = None
