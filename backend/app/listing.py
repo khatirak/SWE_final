@@ -11,10 +11,14 @@ router = APIRouter(
     tags=["listings"],
 )
 
+def get_item_repository(db = Depends(get_database)) -> ItemRepository:
+    return ItemRepository(db)
+
 @router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
 async def create_listing(
     item: ItemCreate,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Create a new item listing [R-101, R-102, R-103, R-104, R-105, R-106, R-107]
@@ -34,8 +38,8 @@ async def create_listing(
     Returns:
         Created item with ID and timestamps
     """
-    # Implementation placeholder
-    pass
+    return await repo.create_item(item, seller_id="100")
+    
 
 @router.get("/{item_id}", response_model=ItemResponse)
 async def get_listing(

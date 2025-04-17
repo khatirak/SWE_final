@@ -1,5 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from bson import ObjectId
 
@@ -39,12 +39,12 @@ class UserRepository:
 class ItemRepository:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
-        self.collection = db.items
+        self.collection = db.Listings
 
     async def create_item(self, item: ItemCreate, seller_id: str) -> ItemResponse:
         item_dict = item.dict()
         item_dict["seller_id"] = seller_id
-        item_dict["created_at"] = datetime.utcnow()
+        item_dict["created_at"] = datetime.now(timezone.utc)
         item_dict["status"] = ListingStatus.AVAILABLE
         item_dict["reservation_count"] = 0
         
@@ -60,7 +60,7 @@ class ItemRepository:
         return None
 
     async def update_item(self, item_id: str, item_update: dict) -> Optional[ItemResponse]:
-        item_update["updated_at"] = datetime.utcnow()
+        item_update["updated_at"] = datetime.now(timezone.utc)
         result = await self.collection.find_one_and_update(
             {"_id": ObjectId(item_id)},
             {"$set": item_update},
@@ -82,7 +82,7 @@ class ReservationRepository:
 
     async def create_reservation(self, reservation: ReservationCreate) -> ReservationResponse:
         reservation_dict = reservation.dict()
-        reservation_dict["created_at"] = datetime.utcnow()
+        reservation_dict["created_at"] = datetime.now(timezone.utc)
         reservation_dict["status"] = "pending"
         
         result = await self.collection.insert_one(reservation_dict)
@@ -106,3 +106,4 @@ class ReservationRepository:
             result["id"] = str(result["_id"])
             return ReservationResponse(**result)
         return None 
+    

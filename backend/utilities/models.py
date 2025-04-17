@@ -69,7 +69,7 @@ class ItemResponse(ItemBase):
     """Model for item response"""
     id: str
     seller_id: str
-    images: List[ImageModel]
+    # images: List[ImageModel]
     created_at: datetime
     updated_at: Optional[datetime] = None
     status: ListingStatus = ListingStatus.AVAILABLE
