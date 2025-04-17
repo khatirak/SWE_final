@@ -6,7 +6,7 @@ from pymongo import ASCENDING, DESCENDING
 
 from ..utilities.models import (
     UserCreate, UserResponse, ItemCreate, ItemResponse,
-    ReservationCreate, ReservationResponse, ListingStatus, SearchFilters
+    ReservationCreate, ReservationResponse, ListingStatus, SearchFilters, ItemCategory
 )
 
 class UserRepository:
@@ -132,6 +132,26 @@ class ItemRepository:
             results.append(ItemResponse(**doc))
 
         return results
+
+    async def get_recent(self, limit: int = 10, category: Optional[ItemCategory] = None) -> List[ItemResponse]:
+        query = {}
+
+        if category:
+            query["category"] = category
+
+        cursor = (
+            self.collection
+            .find(query)
+            .sort("created_at", -1)  # descending order
+            .limit(limit)
+        )
+
+        listings = []
+        async for doc in cursor:
+            doc["id"] = str(doc["_id"])
+            listings.append(ItemResponse(**doc))
+
+        return listings
     
 
 

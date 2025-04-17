@@ -11,11 +11,15 @@ router = APIRouter(
     tags=["home"],
 )
 
+def get_item_repository(db = Depends(get_database)) -> ItemRepository:
+    return ItemRepository(db)
+
 @router.get("/recent", response_model=List[ItemResponse])
 async def get_recent_listings(
     limit: int = 10,
     category: Optional[ItemCategory] = None,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Get most recent listings for home page
@@ -32,7 +36,7 @@ async def get_recent_listings(
         List of recent items
     """
     # Implementation placeholder
-    pass
+    return await repo.get_recent(limit, category)
 
 @router.get("/featured", response_model=List[ItemResponse])
 async def get_featured_listings(
