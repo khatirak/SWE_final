@@ -2,10 +2,11 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime, timezone
 from typing import List, Optional
 from bson import ObjectId
+from pymongo import ASCENDING, DESCENDING
 
 from ..utilities.models import (
     UserCreate, UserResponse, ItemCreate, ItemResponse,
-    ReservationCreate, ReservationResponse, ListingStatus
+    ReservationCreate, ReservationResponse, ListingStatus, SearchFilters
 )
 
 class UserRepository:
@@ -82,6 +83,57 @@ class ItemRepository:
             doc["id"] = str(doc["_id"])
             listings.append(ItemResponse(**doc))
         return listings
+    
+    async def search_items(self, filters: SearchFilters) -> List[ItemResponse]:
+        query = {}
+
+        # Keyword-based search (title or description)
+        if filters.keyword:
+            query["$or"] = [
+                {"title": {"$regex": filters.keyword, "$options": "i"}},
+                {"description": {"$regex": filters.keyword, "$options": "i"}}
+            ]
+
+        # Category filter
+        if filters.category:
+            query["category"] = filters.category
+
+        # Price range filter
+        if filters.min_price is not None or filters.max_price is not None:
+            query["price"] = {}
+            if filters.min_price is not None:
+                query["price"]["$gte"] = filters.min_price
+            if filters.max_price is not None:
+                query["price"]["$lte"] = filters.max_price
+
+        # Condition filter
+        if filters.condition:
+            query["condition"] = filters.condition
+
+        # Status filter
+        if filters.status:
+            query["status"] = filters.status
+
+        # Tags filtering (match at least one tag)
+        if filters.tags:
+            query["tags"] = {"$in": filters.tags}
+
+        # Sorting
+        sort_field = filters.sort_by or "created_at"
+        sort_order = ASCENDING if filters.sort_order == "asc" else DESCENDING
+
+        # Execute query
+        cursor = self.collection.find(query).sort(sort_field, sort_order)
+
+        # Return results as ItemResponse
+        results = []
+        async for doc in cursor:
+            doc["id"] = str(doc["_id"])
+            results.append(ItemResponse(**doc))
+
+        return results
+    
+
 
 class ReservationRepository:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -115,3 +167,4 @@ class ReservationRepository:
             return ReservationResponse(**result)
         return None 
     
+   
