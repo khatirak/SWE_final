@@ -83,7 +83,7 @@ async def auth_callback(
         db: Database connection
         
     Returns:
-        Redirect to home page or error
+        Redirect to frontend home page
     """
     try:
         token = await oauth.google.authorize_access_token(request)
@@ -121,7 +121,9 @@ async def auth_callback(
             'name': user.name
         }
         
-        return RedirectResponse(url='/search')
+        # Redirect to frontend home page
+        frontend_url = "http://localhost:3000"
+        return RedirectResponse(url=frontend_url)
     
     except OAuthError as e:
         logger.error(f"OAuth error: {str(e)}")
@@ -139,16 +141,27 @@ async def auth_callback(
 @router.get("/logout")
 async def logout(request: Request):
     """
-    Log out user by clearing session
+    Log out user by clearing session and redirecting to frontend
     
     Args:
         request: HTTP request
         
     Returns:
-        Redirect to home page
+        Redirect to frontend home page
     """
-    request.session.clear()
-    return RedirectResponse(url='/')
+    try:
+        # Clear the session
+        request.session.clear()
+        
+        # Redirect to frontend home page
+        frontend_url = "http://localhost:3000"
+        return RedirectResponse(url=frontend_url)
+    except Exception as e:
+        logger.error(f"Logout error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Logout failed: {str(e)}"
+        )
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user(

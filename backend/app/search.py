@@ -2,10 +2,18 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from fastapi.responses import RedirectResponse
+from datetime import datetime, timedelta
+import logging
+import re
 
 from utilities.models import ItemResponse, SearchFilters, ItemCategory, ItemCondition, ListingStatus
 from db.repository import ItemRepository
 from db.database import get_database
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/search",
@@ -14,6 +22,13 @@ router = APIRouter(
 
 def get_item_repository(db = Depends(get_database)) -> ItemRepository:
     return ItemRepository(db)
+
+@router.get("", include_in_schema=False)
+async def redirect_to_search():
+    """
+    Redirect requests without trailing slash to the endpoint with trailing slash
+    """
+    return RedirectResponse(url="/search/")
 
 @router.get("/", response_model=List[ItemResponse])
 async def search_listings(
@@ -28,11 +43,13 @@ async def search_listings(
     sort_by: Optional[str] = Query("created_at", description="Sort field"),
     sort_order: Optional[int] = Query(-1, description="Sort order: 1 for ascending, -1 for descending"),
     skip: int = Query(0, ge=0, description="Number of items to skip"),
-    limit: int = Query(20, ge=1, le=100, description="Number of items per page"),
+    limit: int = Query(10, ge=1, le=100, description="Number of items per page"),
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     # Create a filter dictionary
     filter_dict = {}
+    
+    logger.info(f"Search parameters - Query: {q}, Category: {category}, Status: {status}")
     
     # Add search query filter (search in title and description)
     if q:
@@ -43,13 +60,19 @@ async def search_listings(
     
     # Add other filters
     if category:
-        filter_dict["category"] = {"$regex": category, "$options": "i"}
+        # Convert spaces to underscores and make case-insensitive
+        category_normalized = category.lower().replace(" ", "_")
+        filter_dict["category"] = {"$regex": f"^{category_normalized}$", "$options": "i"}
     
     if condition:
         filter_dict["condition"] = {"$regex": condition, "$options": "i"}
     
     if status:
-        filter_dict["status"] = {"$regex": status, "$options": "i"}
+        # Make status case-insensitive
+        filter_dict["status"] = {"$regex": f"^{status}$", "$options": "i"}
+    else:
+        # Default to showing only available items (case-insensitive)
+        filter_dict["status"] = {"$regex": "^available$", "$options": "i"}
     
     # Price range filter
     price_filter = {}
@@ -60,12 +83,13 @@ async def search_listings(
     if price_filter:
         filter_dict["price"] = price_filter
     
-    # Create sort dict
+    # Create sort dict - default to sorting by creation date, newest first
     sort_dict = {sort_by: sort_order}
     
-    print(f"Search filter: {filter_dict}")
+    logger.info(f"Search filter: {filter_dict}")
+    logger.info(f"Sort criteria: {sort_dict}")
     
-    # Query database directly
+    # Query database
     cursor = db.Listings.find(filter_dict).sort(list(sort_dict.items())).skip(skip).limit(limit)
     
     # Convert to list
@@ -73,6 +97,8 @@ async def search_listings(
     async for doc in cursor:
         doc["id"] = str(doc["_id"])
         results.append(ItemResponse(**doc))
+    
+    logger.info(f"Found {len(results)} results")
     
     return results
 

@@ -11,7 +11,7 @@ from app.search import router as search_router
 from db.database import client, MONGODB_URL, DATABASE_NAME
 
 # Get MongoDB configuration directly from environment
-MONGODB_URI = os.getenv("MONGODB_URI")
+MONGODB_URI = os.getenv("MONGO_DETAILS")
 
 app = FastAPI(
     title="NYU Marketplace API",

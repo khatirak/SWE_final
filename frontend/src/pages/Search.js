@@ -1,5 +1,5 @@
 // frontend/src/pages/search.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Container, 
@@ -41,6 +41,9 @@ const Search = () => {
   // State for filter options
   const [categories, setCategories] = useState([]);
 
+  // Ref to track initial load
+  const initialLoad = useRef(true);
+  
   // Add this mock data to your component
 const mockListings = [
   {
@@ -99,6 +102,111 @@ const mockListings = [
   }
 ];
   
+  // Define performSearch function first
+  const performSearch = async (params = {}) => {
+    setLoading(true);
+    setError(null);
+    setNoResults(false);
+    
+    try {
+      // Use provided params or build from current state
+      const searchParams = params || {};
+      if (!Object.keys(searchParams).length) {
+        // If no params provided, show recent listings
+        searchParams.status = 'AVAILABLE';
+        searchParams.sort_by = 'created_at';
+        searchParams.sort_order = -1;
+        searchParams.limit = 10;
+      }
+      
+      const queryString = new URLSearchParams(searchParams).toString();
+      console.log("Making request to:", `http://localhost:8000/search/?${queryString}`);
+      
+      const response = await fetch(`http://localhost:8000/search/?${queryString}`);
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Received listings:", data);
+      
+      if (data.length === 0) {
+        setNoResults(true);
+      }
+      
+      setResults(data);
+    } catch (error) {
+      console.error('Error searching items:', error);
+      setError('An error occurred while searching. Please try again.');
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Reset state when component mounts
+  useEffect(() => {
+    // Clear all search parameters
+    setKeyword('');
+    setCategory('');
+    setMinPrice('');
+    setMaxPrice('');
+    setCondition('');
+    setStatus('AVAILABLE');
+    setSearchParams({});
+  }, []); // Empty dependency array means this runs once on mount
+
+  // Load listings when component mounts or search params change
+  useEffect(() => {
+    // Check if this is a direct access to /search (no search parameters)
+    const isDirectAccess = !searchParams.toString();
+    
+    if (isDirectAccess) {
+      // Reset all search parameters
+      setKeyword('');
+      setCategory('');
+      setMinPrice('');
+      setMaxPrice('');
+      setCondition('');
+      setStatus('AVAILABLE');
+      
+      // Clear URL parameters
+      setSearchParams({});
+      
+      // Show recent listings
+      performSearch({});
+    } else {
+      // Get search parameters from URL
+      const q = searchParams.get('q');
+      const cat = searchParams.get('category');
+      const min = searchParams.get('min_price');
+      const max = searchParams.get('max_price');
+      const cond = searchParams.get('condition');
+      const stat = searchParams.get('status');
+      
+      // Update local state from URL params
+      if (q !== null) setKeyword(q);
+      if (cat !== null) setCategory(cat);
+      if (min !== null) setMinPrice(min);
+      if (max !== null) setMaxPrice(max);
+      if (cond !== null) setCondition(cond);
+      if (stat !== null) setStatus(stat);
+      
+      // Build query parameters for API call
+      const apiParams = {};
+      if (q) apiParams.q = q;
+      if (cat) apiParams.category = cat;
+      if (min) apiParams.min_price = min;
+      if (max) apiParams.max_price = max;
+      if (cond) apiParams.condition = cond;
+      if (stat) apiParams.status = stat;
+      
+      // Perform search with API parameters
+      performSearch(apiParams);
+    }
+  }, [searchParams]); // Only depend on searchParams
+  
   // Fetch categories on component mount
   useEffect(() => {
     const fetchCategories = async () => {
@@ -123,52 +231,6 @@ const mockListings = [
     fetchCategories();
   }, []);
   
-  
-  useEffect(() => {
-    // Load all listings when component mounts
-    performSearch();
-  }, []);
-  
-  // Modify your performSearch function
-  const performSearch = async () => {
-    setLoading(true);
-    setError(null);
-    setNoResults(false);
-    
-    try {
-      // Build query parameters from current state
-      const params = {};
-      if (keyword) params.q = keyword;
-      if (category && category !== "") params.category = category;
-      if (minPrice && minPrice !== "") params.min_price = minPrice;
-      if (maxPrice && maxPrice !== "") params.max_price = maxPrice;
-      if (condition && condition !== "") params.condition = condition;
-      if (status && status !== "") params.status = status.toLowerCase();
-      
-      // Notice the URL changed from /api/search to /search
-      const queryString = new URLSearchParams(params).toString();
-      const response = await fetch(`http://localhost:8000/search?${queryString}`);
-      
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log("Received listings:", data);
-      
-      if (data.length === 0) {
-        setNoResults(true);
-      }
-      
-      setResults(data);
-    } catch (error) {
-      console.error('Error searching items:', error);
-      setError('An error occurred while searching. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Handle search form submission
   const handleSearch = (e) => {
     e.preventDefault();
@@ -176,10 +238,10 @@ const mockListings = [
     // Build search params
     const params = new URLSearchParams();
     
-    if (keyword) params.set('keyword', keyword);
+    if (keyword) params.set('q', keyword);
     if (category) params.set('category', category);
-    if (minPrice) params.set('minPrice', minPrice);
-    if (maxPrice) params.set('maxPrice', maxPrice);
+    if (minPrice) params.set('min_price', minPrice);
+    if (maxPrice) params.set('max_price', maxPrice);
     if (condition) params.set('condition', condition);
     if (status) params.set('status', status);
     

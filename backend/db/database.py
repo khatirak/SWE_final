@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # MongoDB connection settings
-MONGODB_URL = os.getenv("MONGODB_URI")
+MONGODB_URL = os.getenv("MONGO_DETAILS")
 DATABASE_NAME = os.getenv("DATABASE_NAME", "Bazaar")
 
 

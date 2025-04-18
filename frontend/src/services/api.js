@@ -46,9 +46,17 @@ const apiService = {
       }
     },
     
-    create: async (listingData) => {
+    create: async (formData) => {
       try {
-        const response = await axios.post(`${API_URL}/listings`, listingData);
+        const response = await axios.post(
+          `${API_URL}/listings`,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
         return response.data;
       } catch (error) {
         throw error;

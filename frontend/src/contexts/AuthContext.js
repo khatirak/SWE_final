@@ -16,9 +16,6 @@ export function AuthProvider({ children }) {
 
   // Check if user is already logged in on mount
   useEffect(() => {
-
-    // setIsAuthenticated(true);
-    // setLoading(false);
     const checkLoginStatus = async () => {
       try {
         const response = await axios.get(`${API_URL}/auth/me`, {
@@ -43,19 +40,30 @@ export function AuthProvider({ children }) {
 
   // Login function - redirects to Google OAuth
   const login = () => {
-    window.location.href = `${API_URL}/auth/login`;
+    // Use window.open to open in the same window
+    window.open(`${API_URL}/auth/login`, '_self');
   };
 
   // Logout function
   const logout = async () => {
     try {
+      // Call backend logout endpoint
       await axios.get(`${API_URL}/auth/logout`, {
         withCredentials: true
       });
+      
+      // Clear local state
       setCurrentUser(null);
       setIsAuthenticated(false);
+      
+      // Redirect to home page
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if the backend call fails, clear local state
+      setCurrentUser(null);
+      setIsAuthenticated(false);
+      window.location.href = '/';
     }
   };
 

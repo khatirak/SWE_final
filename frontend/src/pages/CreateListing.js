@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Button, Card, Container, Row, Col, Alert } from 'react-bootstrap';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import apiService from '../services/api';
+import apiService from '../services/apiService';
 import { useAuth } from '../contexts/AuthContext';
 
 // Define validation schema
 const listingSchema = Yup.object().shape({
   title: Yup.string()
-    .min(3, 'Title must be at least 3 characters')
+    .min(1, 'Title must be at least 1 character')
     .max(100, 'Title cannot exceed 100 characters')
     .required('Title is required'),
   description: Yup.string()
@@ -28,34 +28,9 @@ const listingSchema = Yup.object().shape({
 const CreateListing = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileError, setFileError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Fetch categories on component mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const categoriesData = await apiService.search.getCategories();
-        setCategories(categoriesData);
-      } catch (error) {
-        console.error('Error fetching categories:', error);
-        // Set default categories in case API fails
-        setCategories([
-          'Apparel & Accessories',
-          'Furniture',
-          'Home Appliances',
-          'Books & Stationery',
-          'Beauty & Personal Care',
-          'Electronics & Gadgets',
-          'Misc. & General Items'
-        ]);
-      }
-    };
-    
-    fetchCategories();
-  }, []);
+  const [error, setError] = useState('');
   
   // Handle file selection
   const handleFileChange = (e) => {
@@ -84,39 +59,36 @@ const CreateListing = () => {
   };
   
   // Handle form submission
-  const handleSubmit = async (values, { setSubmitting, resetForm, setErrors }) => {
-    setIsSubmitting(true);
-    
+  const handleSubmit = async (values) => {
     if (selectedFiles.length < 2) {
-      setFileError('Please select at least 2 images');
-      setIsSubmitting(false);
+      setError('Please select at least 2 images');
       return;
     }
-    
+
     try {
-      // Create listing first
+      // Use placeholder image URLs for testing
+      const placeholderImages = [
+        "https://via.placeholder.com/300x200?text=Image+1",
+        "https://via.placeholder.com/300x200?text=Image+2"
+      ];
+
+      // Create the listing data with placeholder images
       const listingData = {
-        ...values,
-        seller_id: currentUser.id
+        title: values.title,
+        description: values.description,
+        price: Math.round(parseFloat(values.price) * 100), // Convert to cents
+        category: values.category,
+        condition: values.condition,
+        status: "AVAILABLE",
+        images: placeholderImages
       };
-      
+
+      // Create the listing
       const createdListing = await apiService.listings.create(listingData);
-      
-      // Then upload images
-      await apiService.listings.uploadImages(createdListing.id, selectedFiles);
-      
-      // Reset form and redirect
-      resetForm();
-      setSelectedFiles([]);
-      navigate(`/listing/${createdListing.id}`);
+      navigate('/search');
     } catch (error) {
       console.error('Error creating listing:', error);
-      if (error.response && error.response.data) {
-        setErrors(error.response.data);
-      }
-    } finally {
-      setIsSubmitting(false);
-      setSubmitting(false);
+      setError(error.response?.data?.detail || 'Failed to create listing. Please try again.');
     }
   };
   
@@ -175,7 +147,7 @@ const CreateListing = () => {
                         onChange={handleChange}
                         onBlur={handleBlur}
                         isInvalid={touched.description && errors.description}
-                        placeholder="Describe your item (max 200 words)"
+                        placeholder="Describe your item (max 1000 characters)"
                       />
                       <Form.Control.Feedback type="invalid">
                         {errors.description}
@@ -209,11 +181,13 @@ const CreateListing = () => {
                         isInvalid={touched.category && errors.category}
                       >
                         <option value="">Select a category</option>
-                        {categories.map((category, index) => (
-                          <option key={index} value={category}>
-                            {category}
-                          </option>
-                        ))}
+                        <option value="apparel_accessories">Apparel & Accessories</option>
+                        <option value="furniture">Furniture</option>
+                        <option value="home_appliances">Home Appliances</option>
+                        <option value="books_stationery">Books & Stationery</option>
+                        <option value="beauty_personal_care">Beauty & Personal Care</option>
+                        <option value="electronics_gadgets">Electronics & Gadgets</option>
+                        <option value="misc_general_items">Misc. & General Items</option>
                       </Form.Select>
                       <Form.Control.Feedback type="invalid">
                         {errors.category}
@@ -230,10 +204,10 @@ const CreateListing = () => {
                         isInvalid={touched.condition && errors.condition}
                       >
                         <option value="">Select condition</option>
-                        <option value="Brand New">Brand New</option>
-                        <option value="Opened-Unused">Opened-Unused</option>
-                        <option value="Good">Good</option>
-                        <option value="Used">Used</option>
+                        <option value="brand_new">Brand New</option>
+                        <option value="opened_unused">Opened-Unused</option>
+                        <option value="good">Good</option>
+                        <option value="used">Used</option>
                       </Form.Select>
                       <Form.Control.Feedback type="invalid">
                         {errors.condition}
@@ -259,6 +233,12 @@ const CreateListing = () => {
                         </div>
                       )}
                     </Form.Group>
+                    
+                    {error && (
+                      <Alert variant="danger" className="mt-3">
+                        {typeof error === 'string' ? error : 'An error occurred. Please try again.'}
+                      </Alert>
+                    )}
                     
                     <div className="d-grid gap-2 mt-4">
                       <Button
