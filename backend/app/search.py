@@ -64,15 +64,15 @@ async def search_listings(
         category_normalized = category.lower().replace(" ", "_")
         filter_dict["category"] = {"$regex": f"^{category_normalized}$", "$options": "i"}
     
+    def normalize_condition(value: str) -> str:
+        return value.lower().replace(" ", "_").replace("-", "_")
+
     if condition:
-        filter_dict["condition"] = {"$regex": condition, "$options": "i"}
+        normalized_condition = re.escape(normalize_condition(condition))
+        filter_dict["condition"] = {"$regex": f"^{normalized_condition}$", "$options": "i"}
     
-    if status:
-        # Make status case-insensitive
+    if status and status.lower() != "all":
         filter_dict["status"] = {"$regex": f"^{status}$", "$options": "i"}
-    else:
-        # Default to showing only available items (case-insensitive)
-        filter_dict["status"] = {"$regex": "^available$", "$options": "i"}
     
     # Price range filter
     price_filter = {}

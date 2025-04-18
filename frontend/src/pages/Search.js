@@ -1,4 +1,4 @@
-// frontend/src/pages/search.js
+// frontend/src/pages/Search.js
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
@@ -352,7 +352,7 @@ const mockListings = [
                     <option value="AVAILABLE">Available Only</option>
                     <option value="RESERVED">Reserved Only</option>
                     <option value="SOLD">Sold Only</option>
-                    <option value="">All</option>
+                    <option value="ALL">All</option>
                   </Form.Select>
                 </Form.Group>
                 

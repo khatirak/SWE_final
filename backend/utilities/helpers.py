@@ -64,12 +64,12 @@ def generate_search_query(filters: Dict[str, Any]) -> Dict[str, Any]:
             query['price']['$lte'] = filters['max_price']
     
     # Condition filter
-    if filters.get('condition'):
-        query['condition'] = filters['condition']
-    
+    if filters.get('condition') and filters.get('condition').strip():
+        query['condition'] = filters['condition'].lower()
+
     # Status filter
-    if filters.get('status'):
-        query['status'] = filters['status']
+    if filters.get('status') and filters.get('status').strip():
+        query['status'] = filters['status'].lower()
     
     # Tags filter
     if filters.get('tags'):
