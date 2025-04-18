@@ -4,7 +4,7 @@ import { Form, Button, Card, Container, Row, Col, Alert } from 'react-bootstrap'
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import apiService from '../services/apiService';
-import { useAuth } from '../contexts/AuthContext';
+import cloudinaryService from '../services/cloudinaryService';
 
 // Define validation schema
 const listingSchema = Yup.object().shape({
@@ -34,24 +34,25 @@ const listingSchema = Yup.object().shape({
 });
 
 const CreateListing = () => {
-  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileError, setFileError] = useState('');
-  const [error, setError] = useState('');
+  const [submitError, setSubmitError] = useState('');
   
   // Handle file selection
-  const handleFileChange = (e) => {
+  const handleFileChange = (e, setFieldValue, setFieldError) => {
     const files = Array.from(e.target.files);
     
     // Validate number of files
     if (files.length < 2) {
       setFileError('Please select at least 2 images');
+      setFieldError('images', 'Please select at least 2 images');
       return;
     }
     
     if (files.length > 10) {
       setFileError('You can upload maximum 10 images');
+      setFieldError('images', 'You can upload maximum 10 images');
       return;
     }
     
@@ -59,44 +60,67 @@ const CreateListing = () => {
     const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
     if (oversizedFiles.length > 0) {
       setFileError('Some files exceed the 5MB size limit');
+      setFieldError('images', 'Some files exceed the 5MB size limit');
       return;
     }
     
     setSelectedFiles(files);
+    setFieldValue('images', files);
     setFileError('');
+    setFieldError('images', '');
   };
   
   // Handle form submission
-  const handleSubmit = async (values) => {
-    if (selectedFiles.length < 2) {
-      setError('Please select at least 2 images');
-      return;
-    }
-
+  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
     try {
-      // Use placeholder image URLs for testing
-      const placeholderImages = [
-        "https://via.placeholder.com/300x200?text=Image+1",
-        "https://via.placeholder.com/300x200?text=Image+2"
-      ];
+      setSubmitError('');
+      
+      if (!selectedFiles || selectedFiles.length < 2) {
+        setErrors({ images: 'Please select at least 2 images' });
+        return;
+      }
 
-      // Create the listing data with placeholder images
+      // Upload images to Cloudinary first
+      let imageUrls = [];
+      try {
+        console.log('Starting image upload to Cloudinary...');
+        imageUrls = await cloudinaryService.uploadImages(selectedFiles);
+        console.log('Images uploaded successfully:', imageUrls);
+        
+        if (!imageUrls || imageUrls.length < 2) {
+          throw new Error('Failed to upload images. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error uploading images:', error);
+        setSubmitError(error.message || 'Failed to upload images. Please try again.');
+        return;
+      }
+
+      // Create the listing with the uploaded image URLs
       const listingData = {
         title: values.title,
         description: values.description,
         price: Math.round(parseFloat(values.price)), 
         category: values.category,
         condition: values.condition,
-        status: "AVAILABLE",
-        images: placeholderImages
+        images: imageUrls,
+        status: 'AVAILABLE'
       };
 
-      // Create the listing
-      const createdListing = await apiService.listings.create(listingData);
-      navigate('/search');
+      try {
+        console.log('Creating listing with data:', listingData);
+        await apiService.listings.create(listingData);
+        console.log('Listing created successfully');
+        navigate('/search');
+      } catch (error) {
+        console.error('Error creating listing:', error);
+        setSubmitError(error.response?.data?.message || 'Failed to create listing. Please try again.');
+      }
     } catch (error) {
-      console.error('Error creating listing:', error);
-      setError(error.response?.data?.detail || 'Failed to create listing. Please try again.');
+      console.error('Error in handleSubmit:', error);
+      setSubmitError('An unexpected error occurred. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
   
@@ -108,13 +132,20 @@ const CreateListing = () => {
             <Card.Body className="p-4">
               <h2 className="text-center mb-4">Create a New Listing</h2>
               
+              {submitError && (
+                <Alert variant="danger" className="mt-3">
+                  {submitError}
+                </Alert>
+              )}
+              
               <Formik
                 initialValues={{
                   title: '',
                   description: '',
                   price: '',
                   category: '',
-                  condition: ''
+                  condition: '',
+                  images: []
                 }}
                 validationSchema={listingSchema}
                 onSubmit={handleSubmit}
@@ -126,7 +157,9 @@ const CreateListing = () => {
                   handleChange,
                   handleBlur,
                   handleSubmit,
-                  isSubmitting
+                  isSubmitting,
+                  setFieldValue,
+                  setFieldError
                 }) => (
                   <Form onSubmit={handleSubmit}>
                     <Form.Group className="mb-3">
@@ -222,31 +255,24 @@ const CreateListing = () => {
                       </Form.Control.Feedback>
                     </Form.Group>
                     
-                    <Form.Group className="mb-3">
-                      <Form.Label>Images (2-10 images, max 5MB each) *</Form.Label>
+                    <Form.Group controlId="images">
+                      <Form.Label>Images (2-10 images, max 5MB each)</Form.Label>
                       <Form.Control
                         type="file"
                         multiple
-                        onChange={handleFileChange}
                         accept="image/*"
+                        onChange={(e) => handleFileChange(e, setFieldValue, setFieldError)}
+                        isInvalid={!!errors.images}
                       />
+                      <Form.Control.Feedback type="invalid">
+                        {errors.images}
+                      </Form.Control.Feedback>
                       {fileError && (
                         <Alert variant="danger" className="mt-2">
                           {fileError}
                         </Alert>
                       )}
-                      {selectedFiles.length > 0 && (
-                        <div className="mt-2">
-                          <p>{selectedFiles.length} files selected</p>
-                        </div>
-                      )}
                     </Form.Group>
-                    
-                    {error && (
-                      <Alert variant="danger" className="mt-3">
-                        {typeof error === 'string' ? error : 'An error occurred. Please try again.'}
-                      </Alert>
-                    )}
                     
                     <div className="d-grid gap-2 mt-4">
                       <Button
