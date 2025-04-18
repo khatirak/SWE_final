@@ -11,10 +11,14 @@ router = APIRouter(
     tags=["listings"],
 )
 
+def get_item_repository(db = Depends(get_database)) -> ItemRepository:
+    return ItemRepository(db)
+
 @router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
 async def create_listing(
     item: ItemCreate,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Create a new item listing [R-101, R-102, R-103, R-104, R-105, R-106, R-107]
@@ -34,13 +38,14 @@ async def create_listing(
     Returns:
         Created item with ID and timestamps
     """
-    # Implementation placeholder
-    pass
+    return await repo.create_item(item, seller_id="100") #seller_id???
+    
 
 @router.get("/{item_id}", response_model=ItemResponse)
 async def get_listing(
     item_id: str,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Get details for a specific listing
@@ -53,13 +58,14 @@ async def get_listing(
         Item details
     """
     # Implementation placeholder
-    pass
+    return await repo.get_item(item_id)
 
 @router.put("/{item_id}", response_model=ItemResponse)
 async def update_listing(
     item_id: str,
     item: ItemUpdate,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Update an existing listing
@@ -73,12 +79,13 @@ async def update_listing(
         Updated item
     """
     # Implementation placeholder
-    pass
+    return await repo.update_item(item_id, item.dict(exclude_unset=True))
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_listing(
     item_id: str,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Delete a listing
@@ -88,7 +95,7 @@ async def delete_listing(
         db: Database connection
     """
     # Implementation placeholder
-    pass
+    return await repo.delete_item(item_id)
 
 @router.post("/{item_id}/images", response_model=ItemResponse)
 async def upload_images(
@@ -134,7 +141,8 @@ async def update_listing_status(
 async def get_user_listings(
     user_id: str,
     status: Optional[ListingStatus] = None,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Get all listings for a specific user
@@ -148,4 +156,4 @@ async def get_user_listings(
         List of user's listings
     """
     # Implementation placeholder
-    pass
+    return await repo.get_items_by_seller_id(user_id)

@@ -11,6 +11,9 @@ router = APIRouter(
     tags=["search"],
 )
 
+def get_item_repository(db = Depends(get_database)) -> ItemRepository:
+    return ItemRepository(db)
+
 @router.get("/", response_model=List[ItemResponse])
 async def search_items(
     keyword: Optional[str] = None,
@@ -22,7 +25,8 @@ async def search_items(
     tags: Optional[List[str]] = Query(None),
     sort_by: Optional[str] = "created_at",
     sort_order: Optional[str] = "desc",
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Search for items with filters [R-201, R-202, R-203, R-204]
@@ -52,8 +56,19 @@ async def search_items(
     Returns:
         List of items matching search criteria
     """
-    # Implementation placeholder
-    pass
+    filters = SearchFilters(
+        keyword=keyword,
+        category=category,
+        min_price=min_price,
+        max_price=max_price,
+        condition=condition,
+        status=status,
+        tags=tags,
+        sort_by=sort_by,
+        sort_order=sort_order
+    )
+
+    return await repo.search_items(filters)
 
 @router.get("/categories", response_model=List[str])
 async def get_categories(

@@ -5,11 +5,16 @@ from starlette.config import Config
 from starlette.middleware.sessions import SessionMiddleware
 from motor.motor_asyncio import AsyncIOMotorDatabase
 import os
+import logging
 
 from ..utilities.models import UserCreate, UserResponse
 from ..db.repository import UserRepository
 from ..db.database import get_database
 from ..utilities.helpers import validate_nyu_email
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Configuration
 config = Config('.env')
@@ -19,7 +24,10 @@ oauth = OAuth(config)
 oauth.register(
     name='google',
     server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-    client_kwargs={'scope': 'openid email profile'},
+    client_kwargs={
+        'scope': 'openid email profile',
+        'prompt': 'select_account',  # Always show account selector
+    },
 )
 
 router = APIRouter(
@@ -41,8 +49,23 @@ async def login(request: Request):
     Returns:
         Redirect to Google authentication
     """
-    redirect_uri = request.url_for('auth_callback')
-    return await oauth.google.authorize_redirect(request, redirect_uri)
+    try:
+        # Generate the callback URL
+        redirect_uri = request.url_for('auth_callback')
+        logger.info(f"Generated redirect URI: {redirect_uri}")
+        
+        # Get the authorization URL
+        auth_url = await oauth.google.authorize_redirect(request, redirect_uri)
+        logger.info(f"Authorization URL: {auth_url.headers.get('location')}")
+        
+        return auth_url
+        
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to initiate login: {str(e)}"
+        )
 
 @router.get("/callback")
 async def auth_callback(
@@ -101,9 +124,16 @@ async def auth_callback(
         return RedirectResponse(url='/')
     
     except OAuthError as e:
+        logger.error(f"OAuth error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
+        )
+    except Exception as e:
+        logger.error(f"Callback error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Authentication failed: {str(e)}"
         )
 
 @router.get("/logout")
