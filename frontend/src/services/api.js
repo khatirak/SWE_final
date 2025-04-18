@@ -116,12 +116,18 @@ const apiService = {
   // Search endpoints
   search: {
     searchItems: async (params) => {
-      try {
-        const response = await axios.get(`${API_URL}/search`, { params });
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
+      // Transform frontend params to match backend expectations
+      const apiParams = new URLSearchParams();
+      if (params.keyword) apiParams.set('q', params.keyword);
+      if (params.category) apiParams.set('category', params.category);
+      if (params.min_price) apiParams.set('min_price', params.min_price);
+      if (params.max_price) apiParams.set('max_price', params.max_price);
+      if (params.condition) apiParams.set('condition', params.condition);
+      if (params.status) apiParams.set('status', params.status);
+      
+      // Make the API request
+      const response = await axios.get(`/search?${apiParams.toString()}`);
+      return response.data;
     },
     
     getCategories: async () => {

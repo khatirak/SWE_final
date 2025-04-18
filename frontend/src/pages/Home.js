@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,42 +6,35 @@ import { useAuth } from '../contexts/AuthContext';
 const Home = () => {
   const navigate = useNavigate();
   const { isAuthenticated, login } = useAuth();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [recentListings, setRecentListings] = useState([]);
 
-  // Dummy listings data
-  const dummyListings = [
-    {
-      id: 'dummy1',
-      title: 'MacBook Pro 2022',
-      description: 'Excellent condition, barely used. M1 Pro chip, 16GB RAM, 512GB SSD.',
-      price: 4500,
-      status: 'AVAILABLE',
-      category: 'Electronics & Gadgets',
-      images: ['/placeholder-image.jpg'],
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 'dummy2',
-      title: 'IKEA Desk Lamp',
-      description: 'White desk lamp, perfect for studying. Works great.',
-      price: 50,
-      status: 'RESERVED',
-      category: 'Home Appliances',
-      images: ['/placeholder-image.jpg'],
-      created_at: new Date().toISOString()
-    },
-    {
-      id: 'dummy3',
-      title: 'Calculus Textbook',
-      description: 'Calculus: Early Transcendentals. Great condition, minimal highlighting.',
-      price: 90,
-      status: 'AVAILABLE',
-      category: 'Books & Stationery',
-      images: ['/placeholder-image.jpg'],
-      created_at: new Date().toISOString()
-    }
-  ];
+  // Fetch real listings when component mounts
+  useEffect(() => {
+    const fetchRecentListings = async () => {
+      try {
+        setLoading(true);
+        // Make API call to backend to get recent listings
+        // Using your backend URL structure
+        const response = await fetch('http://localhost:8000/search?limit=3&sort_by=created_at&sort_order=-1');
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setRecentListings(data);
+      } catch (error) {
+        console.error('Error fetching recent listings:', error);
+        setError('Failed to load recent listings. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentListings();
+  }, []);
 
   return (
     <Container>
@@ -68,11 +61,8 @@ const Home = () => {
               Login to Get Started
             </Button>
           )}
-
         </div>
       </div>
-      
-      
       
       {/* How It Works Section */}
       <section className="py-4 mb-5">
@@ -125,9 +115,9 @@ const Home = () => {
           </div>
         ) : error ? (
           <div className="alert alert-danger">{error}</div>
-        ) : (
+        ) : recentListings.length > 0 ? (
           <Row>
-            {dummyListings.map((item) => (
+            {recentListings.map((item) => (
               <Col md={4} key={item.id} className="mb-4">
                 <Card 
                   className="h-100" 
@@ -147,20 +137,24 @@ const Home = () => {
                         {item.price === 0 ? 'Free' : `${item.price} AED`}
                       </h5>
                       <Badge bg={
-                        item.status === 'AVAILABLE' ? 'success' : 
-                        item.status === 'RESERVED' ? 'warning' : 'secondary'
+                        item.status.toUpperCase() === 'AVAILABLE' ? 'success' : 
+                        item.status.toUpperCase() === 'RESERVED' ? 'warning' : 'secondary'
                       }>
-                        {item.status}
+                        {item.status.toUpperCase()}
                       </Badge>
                     </div>
                   </Card.Body>
                   <Card.Footer className="text-muted">
-                    <small>{new Date(item.created_at).toLocaleDateString()}</small>
+                    <small>Category: {item.category}</small>
                   </Card.Footer>
                 </Card>
               </Col>
             ))}
           </Row>
+        ) : (
+          <div className="text-center py-5">
+            <p>No listings available at this time.</p>
+          </div>
         )}
       </section>
     </Container>

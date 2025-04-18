@@ -65,36 +65,22 @@ class ItemUpdate(BaseModel):
     images: Optional[List[str]] = None
     status: Optional[ListingStatus] = None
 
-class ItemResponse(ItemBase):
-    """Model for item response"""
+class ItemResponse(BaseModel):
     id: str
-    seller_id: str
-    # images: List[ImageModel]
-    created_at: datetime
+    title: str
+    description: str
+    price: float
+    category: str
+    status: str
+    condition: Optional[str] = None
+    seller_id: Optional[str] = None
+    images: Optional[List[str]] = []
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    status: ListingStatus = ListingStatus.AVAILABLE
-    reservation_count: Optional[int] = 0
     
     class Config:
-        schema_extra = {
-            "example": {
-                "id": "60d21b4967d0d8992e610c85",
-                "title": "MacBook Pro 2021",
-                "description": "16-inch, M1 chip, excellent condition",
-                "price": 4500,
-                "condition": "good",
-                "category": "electronics_gadgets",
-                "tags": ["laptop", "apple", "macbook"],
-                "location": "D2 Building",
-                "seller_id": "60d21b4967d0d8992e610c85",
-                "images": [{"url": "https://example.com/image1.jpg"}],
-                "created_at": "2025-03-15T12:00:00Z",
-                "updated_at": "2025-03-15T12:00:00Z",
-                "status": "available",
-                "reservation_count": 0
-            }
-        }
-
+        orm_mode = True
+        
 class UserBase(BaseModel):
     """Base model for users"""
     email: EmailStr = Field(..., description="NYU email address")

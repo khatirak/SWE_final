@@ -121,7 +121,7 @@ async def auth_callback(
             'name': user.name
         }
         
-        return RedirectResponse(url='/')
+        return RedirectResponse(url='/search')
     
     except OAuthError as e:
         logger.error(f"OAuth error: {str(e)}")

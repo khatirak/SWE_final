@@ -1,3 +1,4 @@
+// frontend/src/pages/search.js
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
@@ -15,6 +16,10 @@ import {
 import apiService from '../services/api';
 
 const Search = () => {
+
+  // Add this near the top of your component, after your state declarations
+  const [useMockData, setUseMockData] = useState(true); // Set to true to use mock data
+
   // URL search params
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -35,6 +40,64 @@ const Search = () => {
   
   // State for filter options
   const [categories, setCategories] = useState([]);
+
+  // Add this mock data to your component
+const mockListings = [
+  {
+    id: "mock1",
+    title: "Modern Coffee Table",
+    description: "Beautiful wood coffee table in excellent condition",
+    price: 150,
+    category: "Furniture",
+    status: "AVAILABLE",
+    images: ["/placeholder-image.jpg"],
+  },
+  {
+    id: "mock2",
+    title: "iPad Pro 11-inch (2021)",
+    description: "Barely used iPad Pro with Apple Pencil included",
+    price: 1200,
+    category: "Electronics & Gadgets",
+    status: "AVAILABLE",
+    images: ["/placeholder-image.jpg"],
+  },
+  {
+    id: "mock3",
+    title: "Desk Lamp",
+    description: "Adjustable desk lamp with multiple brightness settings",
+    price: 45,
+    category: "Home Appliances",
+    status: "RESERVED",
+    images: ["/placeholder-image.jpg"],
+  },
+  {
+    id: "mock4",
+    title: "University Textbooks",
+    description: "Set of 3 engineering textbooks in good condition",
+    price: 75,
+    category: "Books & Stationery",
+    status: "AVAILABLE",
+    images: ["/placeholder-image.jpg"],
+  },
+  {
+    id: "mock5",
+    title: "Winter Coat",
+    description: "Warm winter coat, size M, worn only a few times",
+    price: 90,
+    category: "Apparel & Accessories",
+    status: "AVAILABLE",
+    images: ["/placeholder-image.jpg"],
+  },
+  {
+    id: "mock6",
+    title: "Plant Stand",
+    description: "Wooden plant stand, perfect for indoor plants",
+    price: 0,
+    category: "Furniture",
+    status: "AVAILABLE",
+    images: ["/placeholder-image.jpg"],
+  }
+];
   
   // Fetch categories on component mount
   useEffect(() => {
@@ -60,41 +123,44 @@ const Search = () => {
     fetchCategories();
   }, []);
   
-  // Perform search if URL params change
-  useEffect(() => {
-    if (searchParams.toString()) {
-      performSearch();
-    }
-  }, [searchParams]);
   
-  // Function to perform search
+  useEffect(() => {
+    // Load all listings when component mounts
+    performSearch();
+  }, []);
+  
+  // Modify your performSearch function
   const performSearch = async () => {
     setLoading(true);
     setError(null);
     setNoResults(false);
     
     try {
-      const params = {
-        keyword: searchParams.get('keyword'),
-        category: searchParams.get('category'),
-        min_price: searchParams.get('minPrice'),
-        max_price: searchParams.get('maxPrice'),
-        condition: searchParams.get('condition'),
-        status: searchParams.get('status') || 'AVAILABLE'
-      };
+      // Build query parameters from current state
+      const params = {};
+      if (keyword) params.q = keyword;
+      if (category && category !== "") params.category = category;
+      if (minPrice && minPrice !== "") params.min_price = minPrice;
+      if (maxPrice && maxPrice !== "") params.max_price = maxPrice;
+      if (condition && condition !== "") params.condition = condition;
+      if (status && status !== "") params.status = status.toLowerCase();
       
-      // Remove undefined or null values
-      Object.keys(params).forEach(key => {
-        if (!params[key]) delete params[key];
-      });
+      // Notice the URL changed from /api/search to /search
+      const queryString = new URLSearchParams(params).toString();
+      const response = await fetch(`http://localhost:8000/search?${queryString}`);
       
-      const searchResults = await apiService.search.searchItems(params);
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
       
-      if (searchResults.length === 0) {
+      const data = await response.json();
+      console.log("Received listings:", data);
+      
+      if (data.length === 0) {
         setNoResults(true);
       }
       
-      setResults(searchResults);
+      setResults(data);
     } catch (error) {
       console.error('Error searching items:', error);
       setError('An error occurred while searching. Please try again.');
@@ -102,7 +168,7 @@ const Search = () => {
       setLoading(false);
     }
   };
-  
+
   // Handle search form submission
   const handleSearch = (e) => {
     e.preventDefault();
@@ -252,7 +318,7 @@ const Search = () => {
               <Spinner animation="border" role="status">
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
-              <p className="mt-2">Searching items...</p>
+              <p className="mt-2">Loading listings...</p>
             </div>
           ) : error ? (
             <Alert variant="danger">{error}</Alert>
@@ -300,14 +366,10 @@ const Search = () => {
                 ))}
               </Row>
             </>
-          ) : searchParams.toString() ? (
-            <div className="text-center py-5">
-              <p>No items found matching your search criteria.</p>
-              <p>Try adjusting your filters or search for something else.</p>
-            </div>
           ) : (
             <div className="text-center py-5">
-              <p>Use the filters on the left to search for items.</p>
+              <p>No items available at this time.</p>
+              <p>Check back later or try different search criteria.</p>
             </div>
           )}
         </Col>
