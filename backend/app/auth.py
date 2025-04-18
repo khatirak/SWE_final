@@ -6,10 +6,10 @@ from starlette.middleware.sessions import SessionMiddleware
 from motor.motor_asyncio import AsyncIOMotorDatabase
 import os
 
-from ..utilities.models import UserCreate, UserResponse
-from ..db.repository import UserRepository
-from ..db.database import get_database
-from ..utilities.helpers import validate_nyu_email
+from utilities.models import UserCreate, UserResponse
+from db.repository import UserRepository
+from db.database import get_database
+from utilities.helpers import validate_nyu_email
 
 # Configuration
 config = Config('.env')

@@ -4,11 +4,11 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from starlette.middleware.sessions import SessionMiddleware
 import os
 
-from backend.app.auth import router as auth_router
-from backend.app.home import router as home_router
-from backend.app.listing import router as listing_router
-from backend.app.search import router as search_router
-from backend.db.database import client
+from app.auth import router as auth_router
+from app.home import router as home_router
+from app.listing import router as listing_router
+from app.search import router as search_router
+from db.database import client
 
 app = FastAPI(
     title="NYU Marketplace API",

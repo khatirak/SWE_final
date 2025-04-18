@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from ..utilities.models import ItemResponse, SearchFilters, ItemCategory, ItemCondition, ListingStatus
-from ..db.repository import ItemRepository
-from ..db.database import get_database
+from utilities.models import ItemResponse, SearchFilters, ItemCategory, ItemCondition, ListingStatus
+from db.repository import ItemRepository
+from db.database import get_database
 
 router = APIRouter(
     prefix="/search",
