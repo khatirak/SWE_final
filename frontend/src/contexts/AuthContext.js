@@ -17,26 +17,28 @@ export function AuthProvider({ children }) {
   // Check if user is already logged in on mount
   useEffect(() => {
 
-    const checkLoginStatus = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/auth/me`, {
-          withCredentials: true
-        });
+    setIsAuthenticated(true);
+    setLoading(false);
+    // const checkLoginStatus = async () => {
+    //   try {
+    //     const response = await axios.get(`${API_URL}/auth/me`, {
+    //       withCredentials: true
+    //     });
         
-        if (response.status === 200) {
-          setCurrentUser(response.data);
-          setIsAuthenticated(true);
-        }
-      } catch (error) {
-        console.log('User not authenticated');
-        setCurrentUser(null);
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    };
+    //     if (response.status === 200) {
+    //       setCurrentUser(response.data);
+    //       setIsAuthenticated(true);
+    //     }
+    //   } catch (error) {
+    //     console.log('User not authenticated');
+    //     setCurrentUser(null);
+    //     setIsAuthenticated(false);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
     
-    checkLoginStatus();
+    // checkLoginStatus();
   }, []);
 
   // Login function - redirects to Google OAuth
