@@ -2,10 +2,18 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi import Depends
 from typing import AsyncGenerator
 import os
+from dotenv import load_dotenv
+
+# Load .env file
+load_dotenv()
 
 # MongoDB connection settings
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-DATABASE_NAME = os.getenv("DATABASE_NAME", "nyu_marketplace")
+MONGODB_URL = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+DATABASE_NAME = 'Bazaar'
+
+# Print debug info to help diagnose
+print(f"MONGODB_URL from env: {MONGODB_URL}")
+print(f"Using DATABASE_NAME: {DATABASE_NAME}")
 
 # Create MongoDB client
 client = AsyncIOMotorClient(MONGODB_URL)
