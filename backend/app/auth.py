@@ -97,10 +97,8 @@ async def auth_callback(
             
         email = user_info['email']
         if not email.endswith('@nyu.edu'):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access restricted to NYU email accounts"
-            )
+            logger.warning(f"Rejected non-NYU email: {email}")
+            return RedirectResponse(url="http://localhost:3000/?error=invalid_email")
             
         # Get or create user
         user_repo = UserRepository(db)
@@ -127,16 +125,23 @@ async def auth_callback(
     
     except OAuthError as e:
         logger.error(f"OAuth error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        return RedirectResponse(url="http://localhost:3000/?error=oauth_error")
     except Exception as e:
         logger.error(f"Callback error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Authentication failed: {str(e)}"
-        )
+        return RedirectResponse(url="http://localhost:3000/?error=authentication_failed")
+
+    # except OAuthError as e:
+    #     logger.error(f"OAuth error: {str(e)}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=str(e)
+    #     )
+    # except Exception as e:
+    #     logger.error(f"Callback error: {str(e)}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail=f"Authentication failed: {str(e)}"
+    #     )
 
 @router.get("/logout")
 async def logout(request: Request):

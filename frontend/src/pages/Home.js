@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Badge } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Container, Row, Col, Card, Button, Badge, Alert } from 'react-bootstrap';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Home = () => {
@@ -9,7 +9,11 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [recentListings, setRecentListings] = useState([]);
-
+  
+  // Add this to get URL parameters
+  const [searchParams] = useSearchParams();
+  const errorParam = searchParams.get('error');
+  
   // Fetch real listings when component mounts
   useEffect(() => {
     const fetchRecentListings = async () => {
@@ -36,8 +40,34 @@ const Home = () => {
     fetchRecentListings();
   }, []);
 
+  // Error message rendering function
+  const getErrorMessage = () => {
+    if (!errorParam) return null;
+    
+    switch(errorParam) {
+      case 'invalid_email':
+        return 'Access Denied: Only NYU email addresses are allowed.';
+      case 'oauth_error':
+        return 'Login error: There was a problem with the authentication process.';
+      case 'authentication_failed':
+        return 'Authentication failed. Please try again.';
+      default:
+        return 'An error occurred during login.';
+    }
+  };
+
+  const errorMessage = getErrorMessage();
+
   return (
     <Container>
+
+      {/* Error Alert */}
+      {errorMessage && (
+        <Alert variant="danger" className="mt-3" dismissible>
+          {errorMessage}
+        </Alert>
+      )}
+
       {/* Hero Section */}
       <div className="py-5 text-center bg-light rounded mb-5">
         <h1>Welcome to NYUAD Bazaar</h1>

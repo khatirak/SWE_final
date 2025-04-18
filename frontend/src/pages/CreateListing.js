@@ -13,8 +13,16 @@ const listingSchema = Yup.object().shape({
     .max(100, 'Title cannot exceed 100 characters')
     .required('Title is required'),
   description: Yup.string()
-    .min(10, 'Description must be at least 10 characters')
-    .max(1000, 'Description cannot exceed 1000 characters')
+    .test(
+      'min-words',
+      'Description must be at least 5 words',
+      value => value && value.trim().split(/\s+/).filter(word => word.length > 0).length >= 5
+    )
+    .test(
+      'max-words',
+      'Description cannot exceed 200 words',
+      value => !value || value.trim().split(/\s+/).filter(word => word.length > 0).length <= 200
+    )
     .required('Description is required'),
   price: Yup.number()
     .min(0, 'Price cannot be negative')
@@ -76,7 +84,7 @@ const CreateListing = () => {
       const listingData = {
         title: values.title,
         description: values.description,
-        price: Math.round(parseFloat(values.price) * 100), // Convert to cents
+        price: Math.round(parseFloat(values.price)), 
         category: values.category,
         condition: values.condition,
         status: "AVAILABLE",
@@ -147,7 +155,7 @@ const CreateListing = () => {
                         onChange={handleChange}
                         onBlur={handleBlur}
                         isInvalid={touched.description && errors.description}
-                        placeholder="Describe your item (max 1000 characters)"
+                        placeholder="Describe your item (5-200 words)"
                       />
                       <Form.Control.Feedback type="invalid">
                         {errors.description}
