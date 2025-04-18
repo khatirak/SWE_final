@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 # Load .env file
 load_dotenv()
 
+load_dotenv()
 # MongoDB connection settings
 MONGODB_URL = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 DATABASE_NAME = 'Bazaar'
