@@ -16,6 +16,7 @@ export function AuthProvider({ children }) {
 
   // Check if user is already logged in on mount
   useEffect(() => {
+
     const checkLoginStatus = async () => {
       try {
         const response = await axios.get(`${API_URL}/auth/me`, {

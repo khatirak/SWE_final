@@ -41,7 +41,8 @@ async def login(request: Request):
     Returns:
         Redirect to Google authentication
     """
-    redirect_uri = request.url_for('auth_callback')
+    redirect_uri = os.getenv("REDIRECT_URI")
+    print(f"Using redirect URI: {redirect_uri}")  # Add this line
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get("/callback")
