@@ -24,6 +24,12 @@ itsdangerous = "^2.2.0"
 start = "uvicorn.main:main"
 start-prod = "uvicorn.main:main"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+pytest-asyncio = "^0.26.0"
+httpx = "0.26.0"
+pytest-cov = "^6.1.1"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api" 
