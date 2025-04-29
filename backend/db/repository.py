@@ -6,7 +6,7 @@ from pymongo import ASCENDING, DESCENDING
 
 from ..utilities.models import (
     UserCreate, UserResponse, ItemCreate, ItemResponse,
-    ReservationCreate, ReservationResponse, ListingStatus, SearchFilters, ItemCategory, ReservationStatus
+    ReservationCreate, ReservationResponse, ListingStatus, SearchFilters, ItemCategory, ReservationStatus, MyRequestsResponse
 )
 
 class UserRepository:
@@ -314,38 +314,50 @@ class ItemRepository:
             }
         )
         return result.modified_count > 0
-
-
-# class ReservationRepository:
-#     def __init__(self, db: AsyncIOMotorDatabase):
-#         self.db = db
-#         self.collection = db.reservations
-
-#     async def create_reservation(self, reservation: ReservationCreate) -> ReservationResponse:
-#         reservation_dict = reservation.dict()
-#         reservation_dict["created_at"] = datetime.now(timezone.utc)
-#         reservation_dict["status"] = "pending"
-        
-#         result = await self.collection.insert_one(reservation_dict)
-#         reservation_dict["id"] = str(result.inserted_id)
-#         return ReservationResponse(**reservation_dict)
-
-#     async def get_reservation(self, reservation_id: str) -> Optional[ReservationResponse]:
-#         reservation = await self.collection.find_one({"_id": ObjectId(reservation_id)})
-#         if reservation:
-#             reservation["id"] = str(reservation["_id"])
-#             return ReservationResponse(**reservation)
-#         return None
-
-#     async def update_reservation_status(self, reservation_id: str, status: str) -> Optional[ReservationResponse]:
-#         result = await self.collection.find_one_and_update(
-#             {"_id": ObjectId(reservation_id)},
-#             {"$set": {"status": status}},
-#             return_document=True
-#         )
-#         if result:
-#             result["id"] = str(result["_id"])
-#             return ReservationResponse(**result)
-#         return None 
     
-   
+    async def get_items_by_seller_id(self, seller_id: str) -> List[ItemResponse]:
+        cursor = self.collection.find({"seller_id": seller_id})
+        listings = []
+        async for doc in cursor:
+            doc["id"] = str(doc["_id"])
+            listings.append(ItemResponse(**doc))
+        return listings
+
+    async def get_items_requested_by_user(self, buyer_id: str, user_repo: "UserRepository") -> List[MyRequestsResponse]:
+        cursor = self.collection.find({
+            "reservation_requests.buyer_id": buyer_id
+        })
+
+        results = []
+        async for doc in cursor:
+            seller_phone = None
+
+            # Find the reservation that matches
+            for r in doc.get("reservation_requests", []):
+                if r["buyer_id"] == buyer_id:
+                    # Only fetch seller's phone if the reservation is confirmed
+                    if r["status"] == "confirmed":
+                        seller = await user_repo.get_user_by_id(doc["seller_id"])
+                        seller_phone = seller.phone if seller else None
+                        
+                        results.append(MyRequestsResponse(
+                            listing_id=str(doc["_id"]),
+                            title=doc["title"],
+                            seller_id=doc["seller_id"],
+                            requested_at=datetime.fromisoformat(r["requested_at"]),
+                            status=r["status"],
+                            seller_phone=seller_phone
+                        ))
+                    else:
+                        results.append(MyRequestsResponse(
+                            listing_id=str(doc["_id"]),
+                            title=doc["title"],
+                            seller_id=doc["seller_id"],
+                            requested_at=datetime.fromisoformat(r["requested_at"]),
+                            expires_at=datetime.fromisoformat(r["expires_at"]),
+                            status=r["status"]
+                        ))
+                    break  # Only one reservation per listing
+
+        return results
+

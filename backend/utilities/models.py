@@ -144,9 +144,9 @@ class ReservationBase(BaseModel):
 class ReservationInfo(BaseModel):
     buyer_id: str
     requested_at: datetime
-    expires_at: datetime
+    expires_at: Optional[datetime] = None
     status: ReservationStatus
-    buyer_phone: Optional[str] = ""
+    buyer_phone: Optional[str] = None
 
 class ReservationCreate(ReservationBase):
     """Model for creating a new reservation request"""
@@ -202,3 +202,13 @@ class SearchFilters(BaseModel):
                 "sort_order": "asc"
             }
         }
+
+
+class MyRequestsResponse(BaseModel):
+    listing_id: str
+    title: str
+    seller_id: str
+    seller_phone: Optional[str] = None
+    requested_at: datetime
+    expires_at: Optional[datetime] = None
+    status: str
