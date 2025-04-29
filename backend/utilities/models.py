@@ -26,6 +26,10 @@ class ListingStatus(str, Enum):
     RESERVED = "reserved"
     SOLD = "sold"
 
+class ReservationStatus(str, Enum):
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+
 class ImageModel(BaseModel):
     """Model for item images"""
     url: str
@@ -116,6 +120,7 @@ class UserResponse(UserBase):
     id: str
     created_at: datetime
     listings: List[str] = []
+    phone: str
     
     class Config:
         schema_extra = {
@@ -124,18 +129,35 @@ class UserResponse(UserBase):
                 "email": "abc123@nyu.edu",
                 "name": "John Doe",
                 "created_at": "2025-03-15T12:00:00Z",
+                "phone": "+971501239754",
                 "listings": ["60d21b4967d0d8992e610c85"]
             }
         }
 
 class ReservationBase(BaseModel):
     """Base model for reservation requests"""
-    listing_id: str
+    # listing_id: str
     buyer_id: str
+
+
+
+class ReservationInfo(BaseModel):
+    buyer_id: str
+    requested_at: datetime
+    expires_at: datetime
+    status: ReservationStatus
+    buyer_phone: Optional[str] = ""
 
 class ReservationCreate(ReservationBase):
     """Model for creating a new reservation request"""
     pass
+
+class ReservationConfirmation(ReservationBase):
+    """
+    Model for a seller to confirm a buyer's reservation.
+    """
+    pass
+
 
 class ReservationResponse(ReservationBase):
     """Model for reservation response"""
