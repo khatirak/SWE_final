@@ -408,4 +408,32 @@ class ItemRepository:
 
         return results
 
+    async def get_reservation_request(self, user_id: str, user_repo: "UserRepository", item_id: str) -> List[MyRequestsResponse]:
+        doc = await self.collection.find_one({"_id": ObjectId(item_id)})
+        if not doc:
+            return []
+
+        for r in doc.get("reservation_requests", []):
+            if str(r["buyer_id"]) == user_id:
+                seller_phone = None
+                if r["status"] == "confirmed":
+                    seller = await user_repo.get_user_by_id(str(doc["seller_id"]))
+                    seller_phone = seller.phone if seller else None
+
+                response = MyRequestsResponse(
+                    listing_id=str(doc["_id"]),
+                    title=doc["title"],
+                    seller_id=str(doc["seller_id"]),
+                    requested_at=datetime.fromisoformat(r["requested_at"]),
+                    status=r["status"],
+                    seller_phone=seller_phone
+                )
+
+                if r["status"] != "confirmed":
+                    response.expires_at = datetime.fromisoformat(r["expires_at"])
+
+                return [response]
+
+        return []
+
 

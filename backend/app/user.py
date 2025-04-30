@@ -30,3 +30,12 @@ async def get_my_requests(
     user_repo: UserRepository = Depends(get_user_repository)
 ):
     return await repo.get_items_requested_by_user(user_id, user_repo)
+
+@router.get("/{user_id}/my_requests/{item_id}", response_model=List[MyRequestsResponse])
+async def get_my_requests(
+    user_id: str,
+    item_id: str,
+    repo: ItemRepository = Depends(get_item_repository),
+    user_repo: UserRepository = Depends(get_user_repository)
+):
+    return await repo.get_reservation_request(user_id, user_repo, item_id)
