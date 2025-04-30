@@ -3,11 +3,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from utilities.models import ItemCreate, ItemResponse, ItemUpdate, ListingStatus
-from utilities.models import ReservationCreate, ReservationConfirmation, ReservationInfo
+from ..utilities.models import ItemCreate, ItemResponse, ItemUpdate, ListingStatus
+from ..utilities.models import ReservationCreate, ReservationConfirmation, ReservationInfo
 from fastapi import HTTPException
-from db.repository import ItemRepository, UserRepository
-from db.database import get_database
+from ..db.repository import ItemRepository, UserRepository
+from ..db.database import get_database
 
 router = APIRouter(
     prefix="/listings",
