@@ -25,7 +25,7 @@ const apiService = {
       return response.data;
     },
     getUserListings: async (userId) => {
-      const response = await axios.get(`${API_URL}/listings/user/${userId}`, {
+      const response = await axios.get(`${API_URL}//user/${userId}/listings`, {
         withCredentials: true,
       });
       return response.data;

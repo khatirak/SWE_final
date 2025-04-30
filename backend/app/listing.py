@@ -149,17 +149,17 @@ async def update_listing_status(
 
 
 # POST: Create a reservation request
-@router.post("/{item_id}/request", status_code=200)
+@router.post("/{item_id}/request/{user_id}", status_code=200)
 async def request_reservation(
     item_id: str,
-    reservation: ReservationCreate,
+    user_id: str,
     db: AsyncIOMotorDatabase = Depends(get_database),
     repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Request to reserve an item.
     """
-    success = await repo.add_reservation_request(item_id, reservation.buyer_id)
+    success = await repo.add_reservation_request(item_id, user_id)
     if not success:
         raise HTTPException(status_code=404, detail="Listing not found or reservation failed")
     return {"message": "Reservation request submitted successfully."}

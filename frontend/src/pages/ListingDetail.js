@@ -59,7 +59,7 @@ const ListingDetail = () => {
       setReserving(false);
     }
   };
-  
+
   if (loading) {
     return (
       <Container className="text-center py-5">

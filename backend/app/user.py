@@ -15,7 +15,7 @@ def get_item_repository(db = Depends(get_database)) -> ItemRepository:
 def get_user_repository(db = Depends(get_database)) -> UserRepository:
     return UserRepository(db)
 
-@router.get("/{user_id}/get_listings", response_model=List[ItemResponse])
+@router.get("/{user_id}/listings", response_model=List[ItemResponse])
 async def get_my_listings(
     user_id: str,
     repo: ItemRepository = Depends(get_item_repository)
@@ -23,7 +23,7 @@ async def get_my_listings(
     return await repo.get_items_by_seller_id(user_id)
 
 
-@router.get("/{user_id}/get_my_requests", response_model=List[MyRequestsResponse])
+@router.get("/{user_id}/my_requests", response_model=List[MyRequestsResponse])
 async def get_my_requests(
     user_id: str,
     repo: ItemRepository = Depends(get_item_repository),

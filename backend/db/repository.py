@@ -174,16 +174,29 @@ class ItemRepository:
 
     async def add_reservation_request(self, listing_id: str, buyer_id: str) -> bool:
         now = datetime.now(timezone.utc)
+
+        # Check if the user already has a reservation request for this listing
+        listing = await self.collection.find_one({"_id": ObjectId(listing_id)})
+        if not listing:
+            return False
+
+        # Avoid duplicate reservation requests
+        for r in listing.get("reservation_requests", []):
+            if str(r["buyer_id"]) == str(buyer_id):
+                return False  # Already exists
+
         reservation_entry = {
             "buyer_id": ObjectId(buyer_id),
             "requested_at": now.isoformat(),
             "expires_at": (now + timedelta(days=7)).isoformat(),
             "status": ReservationStatus.PENDING
         }
+
         result = await self.collection.update_one(
             {"_id": ObjectId(listing_id)},
-            {"$addToSet": {"reservation_requests": reservation_entry},
-            "$inc": {"reservation_count": 1}
+            {
+                "$addToSet": {"reservation_requests": reservation_entry},
+                "$inc": {"reservation_count": 1}
             }
         )
         return result.modified_count > 0

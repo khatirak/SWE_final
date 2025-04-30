@@ -113,12 +113,30 @@ const apiService = {
     
     getUserListings: async (userId) => {
       try {
-        const response = await axios.get(`${API_URL}/listings/user/${userId}`);
+        const response = await axios.get(`${API_URL}/user/${userId}/listings`);
         return response.data;
       } catch (error) {
         throw error;
       }
-    }
+    },
+
+    reserve: async(userId, listingId) => {
+      try {
+        const response = await axios.post(`${API_URL}/listings/${listingId}/request/${userId}`);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+
+    cancelReservation: async(userId, listingId) =>{
+      try {
+        const response = await axios.delete(`/listings/${listingId}/reservations/${userId}`);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
   },
   
   // Search endpoints
@@ -164,6 +182,17 @@ const apiService = {
         throw error;
       }
     }
+  },
+
+  user: {
+    getMyRequests: async(userId) => {
+      try {
+        const response = await axios.get(`${API_URL}/user/${userId}/my_requests`);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
   },
   
   // Home page endpoints
