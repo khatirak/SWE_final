@@ -31,11 +31,42 @@ class UserRepository:
         return None
 
     async def get_user_by_id(self, user_id: str) -> Optional[UserResponse]:
-        user = await self.collection.find_one({"_id": ObjectId(user_id)})
-        if user:
-            user["id"] = str(user["_id"])
-            return UserResponse(**user)
-        return None
+        try:
+            user = await self.collection.find_one({"_id": ObjectId(user_id)})
+            if user:
+                user["id"] = str(user["_id"])
+                # Ensure required fields exist in the response
+                if "phone" not in user:
+                    user["phone"] = None
+                if "listings" not in user:
+                    user["listings"] = []
+                return UserResponse(**user)
+            return None
+        except Exception as e:
+            # Handle invalid ObjectId or other database errors
+            print(f"Error getting user by ID: {str(e)}")
+            return None
+
+    async def update_phone(self, user_id: str, phone_number: str) -> bool:
+        """
+        Update user's phone number
+        
+        Args:
+            user_id: ID of the user
+            phone_number: New phone number
+            
+        Returns:
+            True if successfully updated, False otherwise
+        """
+        try:
+            result = await self.collection.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"phone": phone_number}}
+            )
+            return result.modified_count > 0
+        except Exception as e:
+            print(f"Error updating phone number: {str(e)}")
+            return False
 
 class ItemRepository:
     def __init__(self, db: AsyncIOMotorDatabase):

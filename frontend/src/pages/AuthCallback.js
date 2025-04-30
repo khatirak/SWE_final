@@ -16,9 +16,22 @@ const AuthCallback = () => {
         
         if (response.ok) {
           const userData = await response.json();
+          console.log('Auth callback received user data:', userData);
+          console.log('Phone field value:', userData.phone);
           setUserData(userData);
-          navigate('/'); // Redirect to home page
+          
+          // Check if user has a phone number (check for null, undefined, empty string)
+          if (!userData.phone && userData.phone !== 0) {
+            console.log('No phone number detected, redirecting to /number');
+            // If no phone number, redirect to the number collection page
+            navigate('/number');
+          } else {
+            console.log('Phone number found, redirecting to home');
+            // If user has a phone number, redirect to home page
+            navigate('/');
+          }
         } else {
+          console.log('Auth failed, redirecting to login');
           navigate('/login'); // Redirect to login if not authenticated
         }
       } catch (error) {

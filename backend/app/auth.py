@@ -119,8 +119,8 @@ async def auth_callback(
             'name': user.name
         }
         
-        # Redirect to frontend home page
-        frontend_url = "http://localhost:3000"
+        # Redirect to frontend auth callback page so phone check can occur
+        frontend_url = "http://localhost:3000/auth/callback"
         return RedirectResponse(url=frontend_url)
     
     except OAuthError as e:
@@ -129,19 +129,6 @@ async def auth_callback(
     except Exception as e:
         logger.error(f"Callback error: {str(e)}")
         return RedirectResponse(url="http://localhost:3000/?error=authentication_failed")
-
-    # except OAuthError as e:
-    #     logger.error(f"OAuth error: {str(e)}")
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail=str(e)
-    #     )
-    # except Exception as e:
-    #     logger.error(f"Callback error: {str(e)}")
-    #     raise HTTPException(
-    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #         detail=f"Authentication failed: {str(e)}"
-    #     )
 
 @router.get("/logout")
 async def logout(request: Request):
@@ -191,4 +178,11 @@ async def get_current_user(
         )
     
     user_repo = UserRepository(db)
-    return await user_repo.get_user_by_id(user['id'])
+    db_user = await user_repo.get_user_by_id(user['id'])
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return db_user

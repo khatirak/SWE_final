@@ -2,9 +2,11 @@ from ..utilities.models import ItemResponse, MyRequestsResponse
 from ..db.repository import ItemRepository, UserRepository
 from ..db.database import get_database
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request, HTTPException, status
 from typing import List
+from pydantic import BaseModel
 
+# Create two separate routers
 router = APIRouter(
     prefix="/user",
     tags=["user"],

@@ -9,6 +9,7 @@ import Search from './pages/Search';
 import ListingDetail from './pages/ListingDetail.js';
 import Profile from './pages/Profile';
 import AuthCallback from './pages/AuthCallback';
+import Number from './pages/Number';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
@@ -34,6 +35,14 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route 
+                path="/number" 
+                element={
+                  <ProtectedRoute>
+                    <Number />
+                  </ProtectedRoute>
+                } 
+              />
               <Route 
                 path="/create-listing" 
                 element={
