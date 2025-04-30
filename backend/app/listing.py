@@ -1,5 +1,5 @@
 # backend/app/listing.py
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Query, Request
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -8,6 +8,7 @@ from ..utilities.models import ReservationCreate, ReservationConfirmation, Reser
 from fastapi import HTTPException
 from ..db.repository import ItemRepository, UserRepository
 from ..db.database import get_database
+from .auth import get_current_user
 
 router = APIRouter(
     prefix="/listings",
@@ -23,9 +24,10 @@ def get_user_repository(db = Depends(get_database)) -> UserRepository:
 
 @router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
 async def create_listing(
-    item: ItemCreate,
+    request: Request,
     db: AsyncIOMotorDatabase = Depends(get_database),
-    repo: ItemRepository = Depends(get_item_repository)
+    repo: ItemRepository = Depends(get_item_repository),
+    current_user = Depends(get_current_user)
 ):
     """
     Create a new item listing [R-101, R-102, R-103, R-104, R-105, R-106, R-107]
@@ -41,12 +43,31 @@ async def create_listing(
     Args:
         item: Item details
         db: Database connection
+        current_user: Authenticated user info
         
     Returns:
         Created item with ID and timestamps
     """
-    return await repo.create_item(item, seller_id="100") #seller_id???
-    
+    try:
+        # Log raw request data
+        body = await request.body()
+        print(f"Raw request body: {body}")
+        
+        # Parse JSON data from request
+        json_data = await request.json()
+        print(f"JSON data: {json_data}")
+        
+        # Create ItemCreate model from JSON data
+        item = ItemCreate(**json_data)
+        print(f"Pydantic model: {item}")
+        
+        result = await repo.create_item(item, seller_id=current_user.id)
+        return result
+    except Exception as e:
+        print(f"Error creating listing: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise
 
 @router.get("/{item_id}", response_model=ItemResponse)
 async def get_listing(

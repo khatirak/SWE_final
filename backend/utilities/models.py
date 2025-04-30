@@ -81,6 +81,8 @@ class ItemResponse(BaseModel):
     images: Optional[List[str]] = []
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    reservation_count: Optional[int] = 0
+    buyerId: Optional[str] = None
     
     class Config:
         orm_mode = True

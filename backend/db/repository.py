@@ -79,6 +79,7 @@ class ItemRepository:
         item_dict["created_at"] = datetime.now(timezone.utc)
         item_dict["status"] = ListingStatus.AVAILABLE
         item_dict["reservation_count"] = 0
+        item_dict["reservation_requests"] = []  # Initialize empty array
         
         result = await self.collection.insert_one(item_dict)
         item_dict["id"] = str(result.inserted_id)
@@ -204,68 +205,123 @@ class ItemRepository:
         return listings
 
     async def add_reservation_request(self, listing_id: str, buyer_id: str) -> bool:
+        print(f"Adding reservation request: listing={listing_id}, buyer={buyer_id}")
         now = datetime.now(timezone.utc)
 
         # Check if the user already has a reservation request for this listing
         listing = await self.collection.find_one({"_id": ObjectId(listing_id)})
         if not listing:
+            print("Listing not found")
             return False
-
-        # Avoid duplicate reservation requests
-        for r in listing.get("reservation_requests", []):
-            if str(r["buyer_id"]) == str(buyer_id):
+            
+        # Initialize reservation_requests if it doesn't exist
+        reservation_requests = listing.get("reservation_requests", [])
+        
+        # Check for duplicate requests
+        for r in reservation_requests:
+            stored_buyer_id = str(r["buyer_id"]) if isinstance(r["buyer_id"], ObjectId) else r["buyer_id"]
+            if stored_buyer_id == str(buyer_id):
+                print(f"Request already exists for buyer {buyer_id}")
                 return False  # Already exists
 
+        # Create the new reservation entry
         reservation_entry = {
             "buyer_id": ObjectId(buyer_id),
             "requested_at": now.isoformat(),
             "expires_at": (now + timedelta(days=7)).isoformat(),
             "status": ReservationStatus.PENDING
         }
-
+        
+        # Determine the current count for increment
+        current_count = listing.get("reservation_count", 0)
+        
+        # Update the listing with the new request
         result = await self.collection.update_one(
             {"_id": ObjectId(listing_id)},
             {
-                "$addToSet": {"reservation_requests": reservation_entry},
-                "$inc": {"reservation_count": 1}
+                "$push": {"reservation_requests": reservation_entry},
+                "$set": {"reservation_count": current_count + 1}
             }
         )
+        
+        print(f"Added reservation request: modified_count={result.modified_count}")
         return result.modified_count > 0
 
     async def confirm_reservation(self, listing_id: str, buyer_id: str) -> bool:
+        print(f"Confirming reservation: listing={listing_id}, buyer={buyer_id}")
+        
+        # Get the current listing
         listing = await self.collection.find_one({"_id": ObjectId(listing_id)})
         if not listing:
+            print("Listing not found")
             return False
 
         updated_requests = []
         found = False
+        
+        # Convert buyer_id to ObjectId if it's not already
+        try:
+            buyer_obj_id = ObjectId(buyer_id)
+        except:
+            print(f"Invalid buyer_id format: {buyer_id}")
+            return False
 
-        for r in listing.get("reservation_requests", []):
-            if str(r["buyer_id"]) == buyer_id:
-                r["status"] = "confirmed"
-                found = True
-            updated_requests.append(r)
+        # Check if we have any reservation requests
+        if not listing.get("reservation_requests"):
+            print("No reservation requests found, creating one")
+            # Create a new reservation request
+            now = datetime.now(timezone.utc)
+            reservation_entry = {
+                "buyer_id": buyer_obj_id,
+                "requested_at": now.isoformat(),
+                "expires_at": (now + timedelta(days=7)).isoformat(),
+                "status": "confirmed"
+            }
+            updated_requests = [reservation_entry]
+            found = True
+        else:
+            # Process existing requests
+            for r in listing.get("reservation_requests", []):
+                # Convert stored buyer_id to string for comparison
+                r_buyer_id = str(r["buyer_id"])
+                if r_buyer_id == buyer_id:
+                    print(f"Found matching request for buyer {buyer_id}")
+                    r["status"] = "confirmed"
+                    found = True
+                updated_requests.append(r)
 
         if not found:
-            return False  # Can't confirm if buyer isn't in the list
+            print(f"No matching reservation request found for buyer {buyer_id}")
+            # If we didn't find the buyer in the requests but want to confirm anyway
+            now = datetime.now(timezone.utc)
+            reservation_entry = {
+                "buyer_id": buyer_obj_id,
+                "requested_at": now.isoformat(),
+                "expires_at": (now + timedelta(days=7)).isoformat(),
+                "status": "confirmed"
+            }
+            updated_requests.append(reservation_entry)
 
+        # Update the listing with the new status and reservation data
         result = await self.collection.update_one(
             {"_id": ObjectId(listing_id)},
             {
                 "$set": {
                     "status": "reserved",
-                    "buyerId": ObjectId(buyer_id),
-                    "reservation_requests": updated_requests
+                    "buyerId": buyer_obj_id,
+                    "reservation_requests": updated_requests,
+                    "reservation_count": len(updated_requests)
                 }
             }
         )
+        print(f"Updated listing result: modified_count={result.modified_count}")
         return result.modified_count > 0
 
     async def get_reservations(self, listing_id: str, user_repo: UserRepository) -> Optional[List[dict]]:
         listing = await self.collection.find_one({"_id": ObjectId(listing_id)})
         if not listing:
-            print("not found")
-            return None
+            print("Listing not found")
+            return []  # Return empty list instead of None
 
         now = datetime.now(timezone.utc)
         valid_reservations = []
@@ -275,20 +331,67 @@ class ItemRepository:
         listing_status = listing.get("status")
         if listing_status:
             listing_status = ListingStatus(listing_status)
-        # print(listing_status)
+        
+        # Debug the listing data
+        print(f"Listing ID: {listing_id}, Status: {listing_status}")
+        print(f"Reservation count: {listing.get('reservation_count', 0)}")
+        print(f"Reservation requests: {listing.get('reservation_requests', [])}")
+        print(f"Buyer ID: {listing.get('buyerId')}")
+
+        # If listing status is RESERVED but there are no reservation_requests, create a dummy one
+        if listing_status == ListingStatus.RESERVED and listing.get("buyerId") and not listing.get("reservation_requests"):
+            buyer_id = listing.get("buyerId")
+            print(f"Creating dummy reservation for buyer: {buyer_id}")
+            
+            # Use the UserRepository to get the user instance
+            user = await user_repo.get_user_by_id(str(buyer_id))
+            buyer_phone = user.phone if user else None
+            
+            # Create a dummy reservation record
+            valid_reservations.append({
+                "buyer_id": str(buyer_id),
+                "requested_at": datetime.now(timezone.utc),
+                "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
+                "status": "confirmed",
+                "buyer_phone": buyer_phone
+            })
+            
+            # Also create and store proper reservation_requests array in the database
+            now = datetime.now(timezone.utc)
+            reservation_entry = {
+                "buyer_id": buyer_id,
+                "requested_at": now.isoformat(),
+                "expires_at": (now + timedelta(days=7)).isoformat(),
+                "status": "confirmed"
+            }
+            
+            # Update the listing with proper reservation data
+            await self.collection.update_one(
+                {"_id": ObjectId(listing_id)},
+                {
+                    "$set": {
+                        "reservation_requests": [reservation_entry],
+                        "reservation_count": 1
+                    }
+                }
+            )
+            
+            return valid_reservations
+            
         # If listing is reserved and has a confirmed buyer
         if listing_status == ListingStatus.RESERVED and listing.get("buyerId"):
             buyer_id = listing["buyerId"]
-            # print(f"buyer id is {buyer_id}")
+            print(f"Processing confirmed reservation for buyer: {buyer_id}")
 
             # Use the UserRepository to get the user instance
-            user = await user_repo.get_user_by_id(buyer_id)
+            user = await user_repo.get_user_by_id(str(buyer_id))
             buyer_phone = user.phone if user else None
 
-            # print(f"buyer phone is {buyer_phone}")
-
+            # Check if there's a reservation request for this buyer
+            found_request = False
             for r in listing.get("reservation_requests", []):
-                if r["buyer_id"] == buyer_id:
+                if str(r["buyer_id"]) == str(buyer_id):
+                    found_request = True
                     valid_reservations.append({
                         "buyer_id": str(r["buyer_id"]),
                         "requested_at": datetime.fromisoformat(r["requested_at"]),
@@ -297,6 +400,35 @@ class ItemRepository:
                         "buyer_phone": buyer_phone
                     })
                     break  # Only one confirmed reservation
+            
+            # If no request found but we have buyerId, create a dummy request
+            if not found_request:
+                valid_reservations.append({
+                    "buyer_id": str(buyer_id),
+                    "requested_at": datetime.now(timezone.utc),
+                    "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
+                    "status": "confirmed",
+                    "buyer_phone": buyer_phone
+                })
+                
+                # Also update the database with correct reservation data
+                now = datetime.now(timezone.utc)
+                reservation_entry = {
+                    "buyer_id": buyer_id,
+                    "requested_at": now.isoformat(),
+                    "expires_at": (now + timedelta(days=7)).isoformat(),
+                    "status": "confirmed"
+                }
+                
+                await self.collection.update_one(
+                    {"_id": ObjectId(listing_id)},
+                    {
+                        "$set": {
+                            "reservation_requests": [reservation_entry],
+                            "reservation_count": 1
+                        }
+                    }
+                )
         else:
             # Listing is available — return pending reservations
             for r in listing.get("reservation_requests", []):
@@ -314,8 +446,8 @@ class ItemRepository:
             if len(updated_requests) != len(listing.get("reservation_requests", [])):
                 await self.collection.update_one(
                     {"_id": ObjectId(listing_id)},
-                    {"$set": {"reservation_requests": updated_request,
-                              "reservation_count": len(updated_request)}
+                    {"$set": {"reservation_requests": updated_requests,
+                              "reservation_count": len(updated_requests)}
                     }
                 )
 

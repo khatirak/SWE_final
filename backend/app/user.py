@@ -6,6 +6,10 @@ from fastapi import APIRouter, Depends, Query, Request, HTTPException, status
 from typing import List
 from pydantic import BaseModel
 
+# Model for phone update
+class PhoneUpdate(BaseModel):
+    phoneNumber: str
+
 # Create two separate routers
 router = APIRouter(
     prefix="/user",
@@ -41,3 +45,40 @@ async def get_my_requests(
     user_repo: UserRepository = Depends(get_user_repository)
 ):
     return await repo.get_reservation_request(user_id, user_repo, item_id)
+
+# Add the update-phone endpoint 
+@router.post("/update-phone")
+async def update_phone(
+    phone_data: PhoneUpdate,
+    request: Request,
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """
+    Update user's phone number
+    
+    Args:
+        phone_data: The phone number to update
+        request: HTTP request with session
+        db: Database connection
+        
+    Returns:
+        Success message
+    """
+    user = request.session.get('user')
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
+    
+    # Update phone number in database
+    user_repo = UserRepository(db)
+    success = await user_repo.update_phone(user['id'], phone_data.phoneNumber)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found or update failed"
+        )
+    
+    return {"message": "Phone number updated successfully"}

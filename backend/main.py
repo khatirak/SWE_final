@@ -9,7 +9,6 @@ from backend.app.home import router as home_router
 from backend.app.listing import router as listing_router
 from backend.app.search import router as search_router
 from backend.app.user import router as user_router
-from backend.user import router as users_router
 from backend.db.database import client
 
 app = FastAPI(
@@ -38,7 +37,7 @@ app.include_router(auth_router)
 app.include_router(home_router)
 app.include_router(listing_router)
 app.include_router(search_router)
-app.include_router(users_router)  # Use users_router with /users prefix
+app.include_router(user_router)  # Router with /user prefix
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

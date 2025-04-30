@@ -53,7 +53,7 @@ const apiService = {
           formData,
           {
             headers: {
-              'Content-Type': 'multipart/form-data'
+              'Content-Type': 'application/json'
             }
           }
         );
@@ -129,9 +129,47 @@ const apiService = {
       }
     },
 
-    cancelReservation: async(userId, listingId) =>{
+    cancelReservation: async(userId, listingId) => {
       try {
-        const response = await axios.delete(`/listings/${listingId}/reservations/${userId}`);
+        const response = await axios.delete(`${API_URL}/listings/${listingId}/cancel_reservation?buyer_id=${userId}`);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+
+    getReservations: async(listingId) => {
+      try {
+        const response = await axios.get(`${API_URL}/listings/${listingId}/reservations`);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+
+    confirmReservation: async(listingId, buyerId) => {
+      try {
+        const response = await axios.post(`${API_URL}/listings/${listingId}/confirm`, {
+          buyer_id: buyerId
+        });
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+
+    getMyReservationRequest: async(userId, itemId) => {
+      try {
+        const response = await axios.get(`${API_URL}/user/${userId}/my_requests/${itemId}`);
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+
+    markAsSold: async(listingId) => {
+      try {
+        const response = await axios.post(`${API_URL}/listings/${listingId}/sold`);
         return response.data;
       } catch (error) {
         throw error;

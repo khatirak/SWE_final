@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Card, Badge, Button, Alert, Spinner } from 'react-bootstrap';
+import { Container, Row, Col, Card, Badge, Button, Alert, Spinner, ListGroup, Modal } from 'react-bootstrap';
 import { useAuth } from '../contexts/AuthContext';
 import apiService from '../services/api';
 
@@ -14,12 +14,29 @@ const ListingDetail = () => {
   const [error, setError] = useState(null);
   const [reserving, setReserving] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [reservations, setReservations] = useState([]);
+  const [loadingReservations, setLoadingReservations] = useState(false);
+  const [myReservation, setMyReservation] = useState(null);
+  const [showContactModal, setShowContactModal] = useState(false);
   
+  // Fetch listing details and reservation info
   useEffect(() => {
-    const fetchListing = async () => {
+    const fetchListingData = async () => {
       try {
         const data = await apiService.listings.getById(id);
         setListing(data);
+        
+        // If user is authenticated, check different scenarios
+        if (isAuthenticated && currentUser?.id) {
+          // If user is the seller, fetch all reservation requests
+          if (currentUser.id === data.seller_id) {
+            await fetchReservations();
+          } 
+          // If user is not the seller, check if they have a reservation request
+          else {
+            await fetchMyReservation();
+          }
+        }
       } catch (error) {
         console.error('Error fetching listing:', error);
         setError('Failed to load listing details. It may have been removed or does not exist.');
@@ -28,9 +45,37 @@ const ListingDetail = () => {
       }
     };
     
-    fetchListing();
-  }, [id]);
+    fetchListingData();
+  }, [id, isAuthenticated, currentUser]);
   
+  // Fetch all reservation requests (for seller)
+  const fetchReservations = async () => {
+    setLoadingReservations(true);
+    try {
+      console.log("Fetching reservations for listing:", id);
+      const reservationData = await apiService.listings.getReservations(id);
+      console.log("Reservations data received:", reservationData);
+      setReservations(reservationData);
+    } catch (error) {
+      console.error('Error fetching reservations:', error);
+    } finally {
+      setLoadingReservations(false);
+    }
+  };
+  
+  // Fetch user's own reservation (for buyer)
+  const fetchMyReservation = async () => {
+    try {
+      const result = await apiService.listings.getMyReservationRequest(currentUser.id, id);
+      if (result && result.length > 0) {
+        setMyReservation(result[0]);
+      }
+    } catch (error) {
+      console.error('Error fetching my reservation:', error);
+    }
+  };
+  
+  // Request to reserve an item
   const handleReserveClick = async () => {
     if (!isAuthenticated) {
       navigate('/login');
@@ -39,24 +84,86 @@ const ListingDetail = () => {
     
     try {
       setReserving(true);
+      await apiService.listings.reserve(currentUser.id, id);
+      setSuccess('Reservation request sent successfully! The seller will be notified.');
       
-      // In a real app, this would call a proper reservation endpoint
-      // For now, we'll simulate it with a status update
-      await apiService.listings.updateStatus(id, 'reserved');
+      // Refresh my reservation status
+      await fetchMyReservation();
       
-      setSuccess('Item reserved successfully! The seller will be notified.');
-      
-      // Update the listing in our state
-      setListing(prev => ({
-        ...prev,
-        status: 'reserved',
-        reserved_by: currentUser.id
-      }));
     } catch (error) {
       console.error('Error reserving item:', error);
       setError('Failed to reserve this item. Please try again later.');
     } finally {
       setReserving(false);
+    }
+  };
+  
+  // Cancel reservation request (for buyer)
+  const handleCancelReservation = async () => {
+    try {
+      await apiService.listings.cancelReservation(currentUser.id, id);
+      setSuccess('Reservation request cancelled successfully.');
+      setMyReservation(null);
+      
+      // If this was a confirmed reservation, refresh the listing
+      const updatedListing = await apiService.listings.getById(id);
+      setListing(updatedListing);
+      
+    } catch (error) {
+      console.error('Error cancelling reservation:', error);
+      setError('Failed to cancel reservation. Please try again later.');
+    }
+  };
+  
+  // Confirm a reservation request (for seller)
+  const handleConfirmReservation = async (buyerId) => {
+    try {
+      await apiService.listings.confirmReservation(id, buyerId);
+      setSuccess('Reservation confirmed! The buyer will be notified.');
+      
+      // Refresh reservations and listing data
+      await fetchReservations();
+      const updatedListing = await apiService.listings.getById(id);
+      setListing(updatedListing);
+      
+    } catch (error) {
+      console.error('Error confirming reservation:', error);
+      setError('Failed to confirm reservation. Please try again later.');
+    }
+  };
+  
+  // Cancel a reservation request (for seller)
+  const handleSellerCancelReservation = async (buyerId) => {
+    try {
+      await apiService.listings.cancelReservation(buyerId, id);
+      setSuccess('Reservation request cancelled.');
+      
+      // Refresh reservations
+      await fetchReservations();
+      
+      // If this was a confirmed reservation, refresh the listing
+      const updatedListing = await apiService.listings.getById(id);
+      setListing(updatedListing);
+      
+    } catch (error) {
+      console.error('Error cancelling reservation:', error);
+      setError('Failed to cancel reservation. Please try again later.');
+    }
+  };
+  
+  // Mark item as sold
+  const handleMarkAsSold = async () => {
+    try {
+      await apiService.listings.markAsSold(id);
+      setSuccess('Item marked as sold successfully!');
+      
+      // Refresh listing data
+      const updatedListing = await apiService.listings.getById(id);
+      setListing(updatedListing);
+      
+    } catch (error) {
+      console.error('Error marking item as sold:', error);
+      setError('Failed to mark item as sold. Please try again later.');
     }
   };
 
@@ -96,7 +203,25 @@ const ListingDetail = () => {
   const isAvailable = listing.status === 'available';
   const isReserved = listing.status === 'reserved';
   const isSold = listing.status === 'sold';
-  const isReservedByCurrentUser = isAuthenticated && isReserved && currentUser?.id === listing.reserved_by;
+  const hasConfirmedReservation = reservations.some(r => r.status === 'confirmed');
+  const hasMyPendingReservation = myReservation && myReservation.status === 'pending';
+  const hasMyConfirmedReservation = myReservation && myReservation.status === 'confirmed';
+  
+  console.log("Debug info:", {
+    isOwner,
+    isAuthenticated,
+    currentUserId: currentUser?.id,
+    sellerId: listing.seller_id,
+    status: listing.status,
+    isAvailable,
+    isReserved,
+    isSold,
+    reservations,
+    hasConfirmedReservation,
+    myReservation,
+    hasMyPendingReservation,
+    hasMyConfirmedReservation
+  });
   
   return (
     <Container className="py-4">
@@ -132,7 +257,7 @@ const ListingDetail = () => {
                 style={{ background: 'rgba(0,0,0,0.5)' }}
               >
                 <h3 className="text-white">
-                  {isReserved ? 'reserved' : 'sold'}
+                  {isReserved ? 'RESERVED' : 'SOLD'}
                 </h3>
               </div>
             )}
@@ -191,65 +316,222 @@ const ListingDetail = () => {
             </Card.Body>
           </Card>
           
-          <div className="d-grid gap-2">
-            {isAuthenticated ? (
-              <>
-                {isOwner ? (
-                  <Alert variant="info">
-                    This is your listing. You can manage it from your profile.
-                  </Alert>
-                ) : isAvailable ? (
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={handleReserveClick}
-                    disabled={reserving}
-                  >
-                    {reserving ? (
-                      <>
-                        <Spinner
-                          as="span"
-                          animation="border"
-                          size="sm"
-                          role="status"
-                          aria-hidden="true"
-                          className="me-2"
-                        />
-                        Reserving...
-                      </>
-                    ) : (
-                      'Request Reservation'
-                    )}
-                  </Button>
-                ) : isReservedByCurrentUser ? (
-                  <Alert variant="success">
-                    You have reserved this item. Contact the seller to arrange pickup.
-                  </Alert>
-                ) : (
-                  <Button variant="secondary" disabled>
-                    {isSold ? 'This item has been sold' : 'This item is reserved'}
-                  </Button>
+          {/* Owner Actions */}
+          {isOwner && (
+            <Card className="mb-4">
+              <Card.Body>
+                <Card.Title>Manage Your Listing</Card.Title>
+                
+                {/* Debug info */}
+                <div className="mb-3">
+                  <small className="text-muted">
+                    Status: {listing.status}, 
+                    Reservations count: {reservations.length},
+                    Has confirmed reservation: {hasConfirmedReservation ? 'Yes' : 'No'}
+                  </small>
+                </div>
+                
+                {isReserved && hasConfirmedReservation && (
+                  <div className="mb-3">
+                    <Alert variant="info">
+                      This item is reserved. You can contact the buyer to arrange pickup.
+                    </Alert>
+                    <Button 
+                      variant="success" 
+                      className="me-2"
+                      onClick={() => setShowContactModal(true)}
+                    >
+                      Contact Buyer
+                    </Button>
+                    <Button 
+                      variant="primary"
+                      onClick={handleMarkAsSold}
+                    >
+                      Mark as Sold
+                    </Button>
+                    <Button 
+                      variant="outline-danger" 
+                      className="ms-2"
+                      onClick={() => handleSellerCancelReservation(reservations.find(r => r.status === 'confirmed').buyer_id)}
+                    >
+                      Cancel Reservation
+                    </Button>
+                  </div>
                 )}
-              </>
-            ) : (
+                
+                <div>
+                  <h6>Reservation Requests</h6>
+                  {loadingReservations ? (
+                    <Spinner animation="border" size="sm" />
+                  ) : reservations.length > 0 ? (
+                    <ListGroup>
+                      {reservations.map((reservation, index) => (
+                        <ListGroup.Item 
+                          key={index}
+                          className="d-flex justify-content-between align-items-center"
+                        >
+                          <div>
+                            <strong>Buyer ID:</strong> {reservation.buyer_id}
+                            <div><small>Requested: {new Date(reservation.requested_at).toLocaleString()}</small></div>
+                          </div>
+                          <div>
+                            {reservation.status !== 'confirmed' && (
+                              <>
+                                <Button
+                                  variant="success"
+                                  size="sm"
+                                  className="me-2"
+                                  onClick={() => handleConfirmReservation(reservation.buyer_id)}
+                                >
+                                  Confirm
+                                </Button>
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() => handleSellerCancelReservation(reservation.buyer_id)}
+                                >
+                                  Decline
+                                </Button>
+                              </>
+                            )}
+                            {reservation.status === 'confirmed' && (
+                              <Badge bg="success">Confirmed</Badge>
+                            )}
+                          </div>
+                        </ListGroup.Item>
+                      ))}
+                    </ListGroup>
+                  ) : (
+                    <Alert variant="info">No reservation requests yet.</Alert>
+                  )}
+                </div>
+              </Card.Body>
+            </Card>
+          )}
+          
+          {/* Buyer Actions */}
+          {!isOwner && (
+            <div className="d-grid gap-2">
+              {isAuthenticated ? (
+                <>
+                  {isAvailable && !hasMyPendingReservation && (
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      onClick={handleReserveClick}
+                      disabled={reserving}
+                    >
+                      {reserving ? (
+                        <>
+                          <Spinner
+                            as="span"
+                            animation="border"
+                            size="sm"
+                            role="status"
+                            aria-hidden="true"
+                            className="me-2"
+                          />
+                          Requesting...
+                        </>
+                      ) : (
+                        'Request Reservation'
+                      )}
+                    </Button>
+                  )}
+                  
+                  {hasMyPendingReservation && (
+                    <>
+                      <Alert variant="info">
+                        You have requested to reserve this item. Waiting for seller approval.
+                      </Alert>
+                      <Button
+                        variant="outline-danger"
+                        onClick={handleCancelReservation}
+                      >
+                        Cancel Request
+                      </Button>
+                    </>
+                  )}
+                  
+                  {hasMyConfirmedReservation && (
+                    <>
+                      <Alert variant="success">
+                        Your reservation has been confirmed! Contact the seller to arrange pickup.
+                      </Alert>
+                      <Button
+                        variant="primary"
+                        onClick={() => setShowContactModal(true)}
+                      >
+                        Contact Seller
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        onClick={handleCancelReservation}
+                      >
+                        Cancel Reservation
+                      </Button>
+                    </>
+                  )}
+                  
+                  {isReserved && !hasMyConfirmedReservation && (
+                    <Button variant="secondary" disabled>
+                      This item is reserved
+                    </Button>
+                  )}
+                  
+                  {isSold && (
+                    <Button variant="secondary" disabled>
+                      This item has been sold
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={() => navigate('/login')}
+                >
+                  Sign in to Reserve
+                </Button>
+              )}
+              
               <Button
-                variant="primary"
-                size="lg"
-                onClick={() => navigate('/login')}
+                variant="outline-secondary"
+                onClick={() => navigate(-1)}
               >
-                Sign in to Reserve
+                Back to Listings
               </Button>
-            )}
-            
-            <Button
-              variant="outline-secondary"
-              onClick={() => navigate(-1)}
-            >
-              Back to Listings
-            </Button>
-          </div>
+            </div>
+          )}
         </Col>
       </Row>
+      
+      {/* Contact Modal */}
+      <Modal show={showContactModal} onHide={() => setShowContactModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Contact Information</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {isOwner && hasConfirmedReservation ? (
+            <div>
+              <p><strong>Buyer's Phone:</strong> {reservations.find(r => r.status === 'confirmed')?.buyer_phone || 'Not provided'}</p>
+              <p>You can contact the buyer via WhatsApp to arrange pickup.</p>
+            </div>
+          ) : hasMyConfirmedReservation ? (
+            <div>
+              <p><strong>Seller's Phone:</strong> {myReservation?.seller_phone || 'Not provided'}</p>
+              <p>You can contact the seller via WhatsApp to arrange pickup.</p>
+            </div>
+          ) : (
+            <p>Contact information is not available.</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowContactModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 };

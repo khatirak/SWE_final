@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Form, Button, Card, Container, Row, Col, Alert } from 'react-bootstrap';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
-import apiService from '../services/apiService';
+import apiService from '../services/api';
 import cloudinaryService from '../services/cloudinaryService';
 
 // Define validation schema
