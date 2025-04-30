@@ -21,7 +21,7 @@ const Profile = () => {
         setUserListings(listings);
       } catch (error) {
         console.error('Error fetching user listings:', error);
-        setError('Failed to load your listings. Please try again later.');
+        setError('Failed to load your listings. Please tryAz again later.');
       } finally {
         setLoading(false);
       }
