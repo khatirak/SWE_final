@@ -128,22 +128,25 @@ async def upload_images(
 async def update_listing_status(
     item_id: str,
     status: ListingStatus,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    repo: ItemRepository = Depends(get_item_repository)
 ):
     """
     Update listing status (Available, Reserved, Sold) [R-304]
-    
+
     Args:
         item_id: ID of the item
         status: New status
         db: Database connection
-        
+
     Returns:
         Updated item with new status
     """
-    # Implementation placeholder
-    pass
-
+    updated_item = await repo.update_status(item_id, status)
+    if not updated_item:
+        raise HTTPException(status_code=404, detail="Item not found or update failed")
+    
+    return updated_item
 
 
 # POST: Create a reservation request

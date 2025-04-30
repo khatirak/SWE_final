@@ -71,6 +71,17 @@ class ItemRepository:
             result["id"] = str(result["_id"])
             return ItemResponse(**result)
         return None
+    
+    async def update_status(self, item_id: str, new_status: ListingStatus) -> Optional[ItemResponse]:
+        result = await self.collection.find_one_and_update(
+            {"_id": ObjectId(item_id)},
+            {"$set": {"status": new_status}},
+            return_document=True
+        )
+        if result:
+            result["id"] = str(result["_id"])
+            return ItemResponse(**result)
+        return None
 
     async def delete_item(self, item_id: str) -> bool:
         result = await self.collection.delete_one({"_id": ObjectId(item_id)})
