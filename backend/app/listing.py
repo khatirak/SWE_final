@@ -218,24 +218,3 @@ async def mark_listing_as_sold(
     if not success:
         raise HTTPException(status_code=404, detail="Listing not found")
     return {"message": "Listing marked as sold successfully."}
-
-@router.get("/user/{user_id}", response_model=List[ItemResponse])
-async def get_user_listings(
-    user_id: str,
-    status: Optional[ListingStatus] = None,
-    db: AsyncIOMotorDatabase = Depends(get_database),
-    repo: ItemRepository = Depends(get_item_repository)
-):
-    """
-    Get all listings for a specific user
-    
-    Args:
-        user_id: ID of the user
-        status: Filter by listing status
-        db: Database connection
-        
-    Returns:
-        List of user's listings
-    """
-    # Implementation placeholder
-    return await repo.get_items_by_seller_id(user_id)
