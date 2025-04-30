@@ -140,6 +140,9 @@ class ItemRepository:
         results = []
         async for doc in cursor:
             doc["id"] = str(doc["_id"])
+            doc["seller_id"] = str(doc["seller_id"])
+            doc["buyerId"] = str(doc["buyerId"])
+            print(doc)
             results.append(ItemResponse(**doc))
 
         return results

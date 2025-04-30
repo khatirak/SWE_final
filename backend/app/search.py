@@ -96,6 +96,7 @@ async def search_listings(
     results = []
     async for doc in cursor:
         doc["id"] = str(doc["_id"])
+        doc["seller_id"] = str(doc["seller_id"])
         results.append(ItemResponse(**doc))
     
     logger.info(f"Found {len(results)} results")
