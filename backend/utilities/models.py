@@ -106,7 +106,7 @@ class UserResponse(UserBase):
     id: str
     created_at: datetime
     listings: List[str] = []
-    phone: str
+    phone: Optional[str]
     
     class Config:
         schema_extra = {
