@@ -44,19 +44,21 @@ class ItemRepository:
 
     async def create_item(self, item: ItemCreate, seller_id: str) -> ItemResponse:
         item_dict = item.dict()
-        item_dict["seller_id"] = seller_id
+        item_dict["seller_id"] = ObjectId(seller_id)
         item_dict["created_at"] = datetime.now(timezone.utc)
         item_dict["status"] = ListingStatus.AVAILABLE
         item_dict["reservation_count"] = 0
         
         result = await self.collection.insert_one(item_dict)
         item_dict["id"] = str(result.inserted_id)
+        item_dict["seller_id"] = str(item_dict["seller_id"])
         return ItemResponse(**item_dict)
 
     async def get_item(self, item_id: str) -> Optional[ItemResponse]:
         item = await self.collection.find_one({"_id": ObjectId(item_id)})
         if item:
             item["id"] = str(item["_id"])
+            item["seller_id"] = str(item["seller_id"])
             return ItemResponse(**item)
         return None
 
@@ -88,7 +90,7 @@ class ItemRepository:
         return result.deleted_count > 0
     
     async def get_items_by_seller_id(self, seller_id: str) -> List[ItemResponse]:
-        cursor = self.collection.find({"seller_id": seller_id})
+        cursor = self.collection.find({"seller_id": ObjectId(seller_id)})
         listings = []
         async for doc in cursor:
             doc["id"] = str(doc["_id"])
@@ -167,7 +169,7 @@ class ItemRepository:
     async def add_reservation_request(self, listing_id: str, buyer_id: str) -> bool:
         now = datetime.now(timezone.utc)
         reservation_entry = {
-            "buyer_id": buyer_id,
+            "buyer_id": ObjectId(buyer_id),
             "requested_at": now.isoformat(),
             "expires_at": (now + timedelta(days=7)).isoformat(),
             "status": ReservationStatus.PENDING
@@ -189,7 +191,7 @@ class ItemRepository:
         found = False
 
         for r in listing.get("reservation_requests", []):
-            if r["buyer_id"] == buyer_id:
+            if str(r["buyer_id"]) == buyer_id:
                 r["status"] = "confirmed"
                 found = True
             updated_requests.append(r)
@@ -202,7 +204,7 @@ class ItemRepository:
             {
                 "$set": {
                     "status": "reserved",
-                    "buyerId": buyer_id,
+                    "buyerId": ObjectId(buyer_id),
                     "reservation_requests": updated_requests
                 }
             }
@@ -223,22 +225,22 @@ class ItemRepository:
         listing_status = listing.get("status")
         if listing_status:
             listing_status = ListingStatus(listing_status)
-        print(listing_status)
+        # print(listing_status)
         # If listing is reserved and has a confirmed buyer
         if listing_status == ListingStatus.RESERVED and listing.get("buyerId"):
             buyer_id = listing["buyerId"]
-            print(f"buyer id is {buyer_id}")
+            # print(f"buyer id is {buyer_id}")
 
             # Use the UserRepository to get the user instance
             user = await user_repo.get_user_by_id(buyer_id)
             buyer_phone = user.phone if user else None
 
-            print(f"buyer phone is {buyer_phone}")
+            # print(f"buyer phone is {buyer_phone}")
 
             for r in listing.get("reservation_requests", []):
                 if r["buyer_id"] == buyer_id:
                     valid_reservations.append({
-                        "buyer_id": r["buyer_id"],
+                        "buyer_id": str(r["buyer_id"]),
                         "requested_at": datetime.fromisoformat(r["requested_at"]),
                         "expires_at": datetime.fromisoformat(r["expires_at"]),
                         "status": "confirmed",
@@ -251,7 +253,7 @@ class ItemRepository:
                 expires_at = datetime.fromisoformat(r["expires_at"])
                 if now < expires_at:
                     valid_reservations.append({
-                        "buyer_id": r["buyer_id"],
+                        "buyer_id": str(r["buyer_id"]),
                         "requested_at": datetime.fromisoformat(r["requested_at"]),
                         "expires_at": expires_at,
                         "status": "pending"
@@ -284,7 +286,7 @@ class ItemRepository:
             result = await self.collection.update_one(
                 {"_id": ObjectId(listing_id)},
                 {
-                "$pull": {"reservation_requests": {"buyer_id": buyer_id}},
+                "$pull": {"reservation_requests": {"buyer_id": ObjectId(buyer_id)}},
                 "$inc": {"reservation_count": -1}
                 }
             )
@@ -296,6 +298,8 @@ class ItemRepository:
 
             updated_requests = []
             for r in listing.get("reservation_requests", []):
+                if str(r["buyer_id"]) == buyer_id:
+                    continue
                 r["expires_at"] = new_expiration
                 updated_requests.append(r)
 
@@ -306,7 +310,8 @@ class ItemRepository:
                         "status": "available",
                         "buyerId": None,
                         "reservation_requests": updated_requests
-                    }
+                    },
+                    "$inc": {"reservation_count": -1}
                 }
             )
             return result.modified_count > 0
@@ -338,7 +343,7 @@ class ItemRepository:
         return result.modified_count > 0
     
     async def get_items_by_seller_id(self, seller_id: str) -> List[ItemResponse]:
-        cursor = self.collection.find({"seller_id": seller_id})
+        cursor = self.collection.find({"seller_id": ObjectId(seller_id)})
         listings = []
         async for doc in cursor:
             doc["id"] = str(doc["_id"])
@@ -347,7 +352,7 @@ class ItemRepository:
 
     async def get_items_requested_by_user(self, buyer_id: str, user_repo: "UserRepository") -> List[MyRequestsResponse]:
         cursor = self.collection.find({
-            "reservation_requests.buyer_id": buyer_id
+            "reservation_requests.buyer_id": ObjectId(buyer_id)
         })
 
         results = []
@@ -356,16 +361,16 @@ class ItemRepository:
 
             # Find the reservation that matches
             for r in doc.get("reservation_requests", []):
-                if r["buyer_id"] == buyer_id:
+                if str(r["buyer_id"]) == buyer_id:
                     # Only fetch seller's phone if the reservation is confirmed
                     if r["status"] == "confirmed":
-                        seller = await user_repo.get_user_by_id(doc["seller_id"])
+                        seller = await user_repo.get_user_by_id(str(doc["seller_id"]))
                         seller_phone = seller.phone if seller else None
                         
                         results.append(MyRequestsResponse(
                             listing_id=str(doc["_id"]),
                             title=doc["title"],
-                            seller_id=doc["seller_id"],
+                            seller_id=str(doc["seller_id"]),
                             requested_at=datetime.fromisoformat(r["requested_at"]),
                             status=r["status"],
                             seller_phone=seller_phone
@@ -374,7 +379,7 @@ class ItemRepository:
                         results.append(MyRequestsResponse(
                             listing_id=str(doc["_id"]),
                             title=doc["title"],
-                            seller_id=doc["seller_id"],
+                            seller_id=str(doc["seller_id"]),
                             requested_at=datetime.fromisoformat(r["requested_at"]),
                             expires_at=datetime.fromisoformat(r["expires_at"]),
                             status=r["status"]

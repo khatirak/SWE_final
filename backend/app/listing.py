@@ -8,6 +8,7 @@ from ..utilities.models import ReservationCreate, ReservationConfirmation, Reser
 from fastapi import HTTPException
 from ..db.repository import ItemRepository, UserRepository
 from ..db.database import get_database
+from bson import ObjectId
 
 router = APIRouter(
     prefix="/listings",
@@ -45,7 +46,7 @@ async def create_listing(
     Returns:
         Created item with ID and timestamps
     """
-    return await repo.create_item(item, seller_id="100") #seller_id???
+    return await repo.create_item(item, seller_id="680279ae8b489df8835c81d7") #seller_id???
     
 
 @router.get("/{item_id}", response_model=ItemResponse)
