@@ -57,9 +57,9 @@ const Profile = () => {
   };
   
   // Filter listings by status
-  const availableListings = userListings.filter(listing => listing.status === 'AVAILABLE');
-  const reservedListings = userListings.filter(listing => listing.status === 'RESERVED');
-  const soldListings = userListings.filter(listing => listing.status === 'SOLD');
+  const availableListings = userListings.filter(listing => listing.status === 'available');
+  const reservedListings = userListings.filter(listing => listing.status === 'reserved');
+  const soldListings = userListings.filter(listing => listing.status === 'sold');
   
   if (loading) {
     return (
@@ -175,8 +175,8 @@ const ListingsGrid = ({ listings, onView, onEdit, onDelete }) => {
                   {listing.price === 0 ? 'Free' : `${listing.price} AED`}
                 </h5>
                 <Badge bg={
-                  listing.status === 'AVAILABLE' ? 'success' : 
-                  listing.status === 'RESERVED' ? 'warning' : 'secondary'
+                  listing.status === 'available' ? 'success' : 
+                  listing.status === 'reserved' ? 'warning' : 'secondary'
                 }>
                   {listing.status}
                 </Badge>

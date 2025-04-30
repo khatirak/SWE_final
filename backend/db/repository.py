@@ -213,7 +213,7 @@ class ItemRepository:
         if listing_status:
             listing_status = ListingStatus(listing_status)
         print(listing_status)
-        # If listing is RESERVED and has a confirmed buyer
+        # If listing is reserved and has a confirmed buyer
         if listing_status == ListingStatus.RESERVED and listing.get("buyerId"):
             buyer_id = listing["buyerId"]
             print(f"buyer id is {buyer_id}")
@@ -235,7 +235,7 @@ class ItemRepository:
                     })
                     break  # Only one confirmed reservation
         else:
-            # Listing is AVAILABLE — return pending reservations
+            # Listing is available — return pending reservations
             for r in listing.get("reservation_requests", []):
                 expires_at = datetime.fromisoformat(r["expires_at"])
                 if now < expires_at:

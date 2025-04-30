@@ -105,7 +105,7 @@ const CreateListing = () => {
         category: values.category,
         condition: values.condition,
         images: imageUrls,
-        status: 'AVAILABLE'
+        status: 'available'
       };
 
       try {

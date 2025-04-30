@@ -30,7 +30,7 @@ const Search = () => {
   const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '');
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
   const [condition, setCondition] = useState(searchParams.get('condition') || '');
-  const [status, setStatus] = useState(searchParams.get('status') || 'AVAILABLE');
+  const [status, setStatus] = useState(searchParams.get('status') || 'available');
   
   // State for search results
   const [results, setResults] = useState([]);
@@ -52,7 +52,7 @@ const mockListings = [
     description: "Beautiful wood coffee table in excellent condition",
     price: 150,
     category: "Furniture",
-    status: "AVAILABLE",
+    status: "available",
     images: ["/placeholder-image.jpg"],
   },
   {
@@ -61,7 +61,7 @@ const mockListings = [
     description: "Barely used iPad Pro with Apple Pencil included",
     price: 1200,
     category: "Electronics & Gadgets",
-    status: "AVAILABLE",
+    status: "available",
     images: ["/placeholder-image.jpg"],
   },
   {
@@ -70,7 +70,7 @@ const mockListings = [
     description: "Adjustable desk lamp with multiple brightness settings",
     price: 45,
     category: "Home Appliances",
-    status: "RESERVED",
+    status: "reserved",
     images: ["/placeholder-image.jpg"],
   },
   {
@@ -79,7 +79,7 @@ const mockListings = [
     description: "Set of 3 engineering textbooks in good condition",
     price: 75,
     category: "Books & Stationery",
-    status: "AVAILABLE",
+    status: "available",
     images: ["/placeholder-image.jpg"],
   },
   {
@@ -88,7 +88,7 @@ const mockListings = [
     description: "Warm winter coat, size M, worn only a few times",
     price: 90,
     category: "Apparel & Accessories",
-    status: "AVAILABLE",
+    status: "available",
     images: ["/placeholder-image.jpg"],
   },
   {
@@ -97,7 +97,7 @@ const mockListings = [
     description: "Wooden plant stand, perfect for indoor plants",
     price: 0,
     category: "Furniture",
-    status: "AVAILABLE",
+    status: "available",
     images: ["/placeholder-image.jpg"],
   }
 ];
@@ -113,7 +113,7 @@ const mockListings = [
       const searchParams = params || {};
       if (!Object.keys(searchParams).length) {
         // If no params provided, show recent listings
-        searchParams.status = 'AVAILABLE';
+        searchParams.status = 'available';
         searchParams.sort_by = 'created_at';
         searchParams.sort_order = -1;
         searchParams.limit = 10;
@@ -153,7 +153,7 @@ const mockListings = [
     setMinPrice('');
     setMaxPrice('');
     setCondition('');
-    setStatus('AVAILABLE');
+    setStatus('available');
     setSearchParams({});
   }, []); // Empty dependency array means this runs once on mount
 
@@ -169,7 +169,7 @@ const mockListings = [
       setMinPrice('');
       setMaxPrice('');
       setCondition('');
-      setStatus('AVAILABLE');
+      setStatus('available');
       
       // Clear URL parameters
       setSearchParams({});
@@ -256,7 +256,7 @@ const mockListings = [
     setMinPrice('');
     setMaxPrice('');
     setCondition('');
-    setStatus('AVAILABLE');
+    setStatus('available');
     setSearchParams({});
     setResults([]);
     setNoResults(false);
@@ -349,9 +349,9 @@ const mockListings = [
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
                   >
-                    <option value="AVAILABLE">Available Only</option>
-                    <option value="RESERVED">Reserved Only</option>
-                    <option value="SOLD">Sold Only</option>
+                    <option value="available">Available Only</option>
+                    <option value="reserved">Reserved Only</option>
+                    <option value="sold">Sold Only</option>
                     <option value="ALL">All</option>
                   </Form.Select>
                 </Form.Group>
@@ -413,8 +413,8 @@ const mockListings = [
                             {item.price === 0 ? 'Free' : `${item.price} AED`}
                           </h5>
                           <Badge bg={
-                            item.status === 'AVAILABLE' ? 'success' : 
-                            item.status === 'RESERVED' ? 'warning' : 'secondary'
+                            item.status === 'available' ? 'success' : 
+                            item.status === 'reserved' ? 'warning' : 'secondary'
                           }>
                             {item.status}
                           </Badge>

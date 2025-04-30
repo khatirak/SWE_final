@@ -167,8 +167,8 @@ const Home = () => {
                         {item.price === 0 ? 'Free' : `${item.price} AED`}
                       </h5>
                       <Badge bg={
-                        item.status.toUpperCase() === 'AVAILABLE' ? 'success' : 
-                        item.status.toUpperCase() === 'RESERVED' ? 'warning' : 'secondary'
+                        item.status.toUpperCase() === 'available' ? 'success' : 
+                        item.status.toUpperCase() === 'reserved' ? 'warning' : 'secondary'
                       }>
                         {item.status.toUpperCase()}
                       </Badge>

@@ -42,14 +42,14 @@ const ListingDetail = () => {
       
       // In a real app, this would call a proper reservation endpoint
       // For now, we'll simulate it with a status update
-      await apiService.listings.updateStatus(id, 'RESERVED');
+      await apiService.listings.updateStatus(id, 'reserved');
       
       setSuccess('Item reserved successfully! The seller will be notified.');
       
       // Update the listing in our state
       setListing(prev => ({
         ...prev,
-        status: 'RESERVED',
+        status: 'reserved',
         reserved_by: currentUser.id
       }));
     } catch (error) {
@@ -93,9 +93,9 @@ const ListingDetail = () => {
   }
   
   const isOwner = isAuthenticated && currentUser?.id === listing.seller_id;
-  const isAvailable = listing.status === 'AVAILABLE';
-  const isReserved = listing.status === 'RESERVED';
-  const isSold = listing.status === 'SOLD';
+  const isAvailable = listing.status === 'available';
+  const isReserved = listing.status === 'reserved';
+  const isSold = listing.status === 'sold';
   const isReservedByCurrentUser = isAuthenticated && isReserved && currentUser?.id === listing.reserved_by;
   
   return (
@@ -132,7 +132,7 @@ const ListingDetail = () => {
                 style={{ background: 'rgba(0,0,0,0.5)' }}
               >
                 <h3 className="text-white">
-                  {isReserved ? 'RESERVED' : 'SOLD'}
+                  {isReserved ? 'reserved' : 'sold'}
                 </h3>
               </div>
             )}
