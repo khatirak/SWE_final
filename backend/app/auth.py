@@ -104,6 +104,7 @@ async def auth_callback(
         user_repo = UserRepository(db)
         user = await user_repo.get_user_by_email(email)
         
+        is_new_user = False
         if not user:
             # Create new user
             new_user = UserCreate(
@@ -111,6 +112,7 @@ async def auth_callback(
                 name=user_info.get('name', '')
             )
             user = await user_repo.create_user(new_user)
+            is_new_user = True
         
         # Store user in session
         request.session['user'] = {
@@ -119,9 +121,15 @@ async def auth_callback(
             'name': user.name
         }
         
-        # Redirect to frontend home page
+        # Check if user has a phone number
+        needs_phone = is_new_user or not user.phone
+        
+        # Redirect to phone number input page if needed, otherwise to home
         frontend_url = "http://localhost:3000"
-        return RedirectResponse(url=frontend_url)
+        if needs_phone:
+            return RedirectResponse(url=f"{frontend_url}/number")
+        else:
+            return RedirectResponse(url=frontend_url)
     
     except OAuthError as e:
         logger.error(f"OAuth error: {str(e)}")
@@ -129,19 +137,6 @@ async def auth_callback(
     except Exception as e:
         logger.error(f"Callback error: {str(e)}")
         return RedirectResponse(url="http://localhost:3000/?error=authentication_failed")
-
-    # except OAuthError as e:
-    #     logger.error(f"OAuth error: {str(e)}")
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail=str(e)
-    #     )
-    # except Exception as e:
-    #     logger.error(f"Callback error: {str(e)}")
-    #     raise HTTPException(
-    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #         detail=f"Authentication failed: {str(e)}"
-    #     )
 
 @router.get("/logout")
 async def logout(request: Request):

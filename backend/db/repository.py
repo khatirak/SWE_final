@@ -23,6 +23,26 @@ class UserRepository:
         user_dict["id"] = str(result.inserted_id)
         return UserResponse(**user_dict)
 
+    async def update_user_phone(self, user_id: str, phone: str) -> Optional[UserResponse]:
+        """Update user's phone number
+        
+        Args:
+            user_id: User ID
+            phone: Phone number to update
+            
+        Returns:
+            Updated user or None if user not found
+        """
+        result = await self.collection.find_one_and_update(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"phone": phone}},
+            return_document=True
+        )
+        if result:
+            result["id"] = str(result["_id"])
+            return UserResponse(**result)
+        return None
+
     async def get_user_by_email(self, email: str) -> Optional[UserResponse]:
         user = await self.collection.find_one({"email": email})
         if user:

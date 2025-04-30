@@ -2,6 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Badge, Alert } from 'react-bootstrap';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
+
+// Access the API URL from environment variables
+const API_URL = process.env.REACT_APP_API_URL;
 
 const Home = () => {
   const navigate = useNavigate();
@@ -14,14 +18,31 @@ const Home = () => {
   const [searchParams] = useSearchParams();
   const errorParam = searchParams.get('error');
   
+  // Check if user has a phone number and redirect if needed
+  useEffect(() => {
+    const checkPhoneNumber = async () => {
+      if (isAuthenticated) {
+        try {
+          const response = await axios.get(`${API_URL}/user/has_phone`, { withCredentials: true });
+          if (!response.data.has_phone) {
+            navigate('/number');
+          }
+        } catch (err) {
+          console.error('Error checking phone status:', err);
+        }
+      }
+    };
+    
+    checkPhoneNumber();
+  }, [isAuthenticated, navigate]);
+  
   // Fetch real listings when component mounts
   useEffect(() => {
     const fetchRecentListings = async () => {
       try {
         setLoading(true);
         // Make API call to backend to get recent listings
-        // Using your backend URL structure
-        const response = await fetch('http://localhost:8000/search?limit=3&sort_by=created_at&sort_order=-1');
+        const response = await fetch(`${API_URL}/search?limit=3&sort_by=created_at&sort_order=-1`);
         
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`);
