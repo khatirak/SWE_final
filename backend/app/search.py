@@ -7,9 +7,9 @@ from datetime import datetime, timedelta
 import logging
 import re
 
-from utilities.models import ItemResponse, SearchFilters, ItemCategory, ItemCondition, ListingStatus
-from db.repository import ItemRepository
-from db.database import get_database
+from backend.utilities.models import ItemResponse, SearchFilters, ItemCategory, ItemCondition, ListingStatus
+from backend.db.repository import ItemRepository
+from backend.db.database import get_database
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
