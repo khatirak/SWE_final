@@ -39,7 +39,7 @@ app.include_router(auth_router)
 app.include_router(home_router)
 app.include_router(listing_router)
 app.include_router(search_router)
-app.include_router(user_router)
+# app.include_router(user_router)
 
 @app.on_event("startup")
 async def startup_db_client():
