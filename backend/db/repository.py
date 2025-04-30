@@ -1,10 +1,10 @@
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from datetime import datetime, timezone, timedelta
-from typing import List, Optional
 from bson import ObjectId
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timezone
 from pymongo import ASCENDING, DESCENDING
 
-from ..utilities.models import (
+from utilities.models import (
     UserCreate, UserResponse, ItemCreate, ItemResponse,
     ReservationCreate, ReservationResponse, ListingStatus, SearchFilters, ItemCategory, ReservationStatus, MyRequestsResponse
 )
@@ -84,55 +84,47 @@ class ItemRepository:
             listings.append(ItemResponse(**doc))
         return listings
     
-    async def search_items(self, filters: SearchFilters) -> List[ItemResponse]:
-        query = {}
-
-        # Keyword-based search (title or description)
-        if filters.keyword:
-            query["$or"] = [
-                {"title": {"$regex": filters.keyword, "$options": "i"}},
-                {"description": {"$regex": filters.keyword, "$options": "i"}}
-            ]
-
-        # Category filter
-        if filters.category:
-            query["category"] = filters.category
-
-        # Price range filter
-        if filters.min_price is not None or filters.max_price is not None:
-            query["price"] = {}
-            if filters.min_price is not None:
-                query["price"]["$gte"] = filters.min_price
-            if filters.max_price is not None:
-                query["price"]["$lte"] = filters.max_price
-
-        # Condition filter
-        if filters.condition:
-            query["condition"] = filters.condition
-
-        # Status filter
-        if filters.status:
-            query["status"] = filters.status
-
-        # Tags filtering (match at least one tag)
-        if filters.tags:
-            query["tags"] = {"$in": filters.tags}
-
-        # Sorting
-        sort_field = filters.sort_by or "created_at"
-        sort_order = ASCENDING if filters.sort_order == "asc" else DESCENDING
-
-        # Execute query
-        cursor = self.collection.find(query).sort(sort_field, sort_order)
-
+    async def search_items(self, filter_dict: dict, sort_dict: dict, skip: int = 0, limit: int = 20) -> List[ItemResponse]:
+        """
+        Search for items based on filter criteria
+        
+        Args:
+            filter_dict: Dictionary of filter criteria
+            sort_dict: Dictionary of sort criteria
+            skip: Number of items to skip (for pagination)
+            limit: Maximum number of items to return
+            
+        Returns:
+            List of matching items
+        """
+        cursor = self.collection.find(filter_dict)
+        
+        # Apply sorting
+        if sort_dict:
+            cursor = cursor.sort(list(sort_dict.items()))
+        
+        # Apply pagination
+        cursor = cursor.skip(skip).limit(limit)
+        
         # Return results as ItemResponse
         results = []
         async for doc in cursor:
             doc["id"] = str(doc["_id"])
             results.append(ItemResponse(**doc))
-
+        
         return results
-
+    
+    async def get_categories(self) -> List[str]:
+        """
+        Get all distinct categories from the database
+        
+        Returns:
+            List of category names
+        """
+        # Get distinct categories from the listings collection
+        categories = await self.collection.distinct("category")
+        return categories
+    
     async def get_recent(self, limit: int = 10, category: Optional[ItemCategory] = None) -> List[ItemResponse]:
         query = {}
 
@@ -153,19 +145,32 @@ class ItemRepository:
 
         return listings
 
-    async def add_reservation_request(self, listing_id: str, buyer_id: str) -> bool:
-        now = datetime.now(timezone.utc)
-        reservation_entry = {
-            "buyer_id": buyer_id,
-            "requested_at": now.isoformat(),
-            "expires_at": (now + timedelta(days=7)).isoformat(),
-            "status": ReservationStatus.PENDING
-        }
-        result = await self.collection.update_one(
-            {"_id": ObjectId(listing_id)},
-            {"$addToSet": {"reservation_requests": reservation_entry},
-            "$inc": {"reservation_count": 1}
-            }
+class ReservationRepository:
+    def __init__(self, db: AsyncIOMotorDatabase):
+        self.db = db
+        self.collection = db.reservations
+
+    async def create_reservation(self, reservation: ReservationCreate) -> ReservationResponse:
+        reservation_dict = reservation.dict()
+        reservation_dict["created_at"] = datetime.now(timezone.utc)
+        reservation_dict["status"] = "pending"
+        
+        result = await self.collection.insert_one(reservation_dict)
+        reservation_dict["id"] = str(result.inserted_id)
+        return ReservationResponse(**reservation_dict)
+
+    async def get_reservation(self, reservation_id: str) -> Optional[ReservationResponse]:
+        reservation = await self.collection.find_one({"_id": ObjectId(reservation_id)})
+        if reservation:
+            reservation["id"] = str(reservation["_id"])
+            return ReservationResponse(**reservation)
+        return None
+
+    async def update_reservation_status(self, reservation_id: str, status: str) -> Optional[ReservationResponse]:
+        result = await self.collection.find_one_and_update(
+            {"_id": ObjectId(reservation_id)},
+            {"$set": {"status": status}},
+            return_document=True
         )
         return result.modified_count > 0
 

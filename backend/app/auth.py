@@ -7,10 +7,10 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 import os
 import logging
 
-from ..utilities.models import UserCreate, UserResponse
-from ..db.repository import UserRepository
-from ..db.database import get_database
-from ..utilities.helpers import validate_nyu_email
+from utilities.models import UserCreate, UserResponse
+from db.repository import UserRepository
+from db.database import get_database
+from utilities.helpers import validate_nyu_email
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -83,7 +83,7 @@ async def auth_callback(
         db: Database connection
         
     Returns:
-        Redirect to home page or error
+        Redirect to frontend home page
     """
     try:
         token = await oauth.google.authorize_access_token(request)
@@ -97,10 +97,8 @@ async def auth_callback(
             
         email = user_info['email']
         if not email.endswith('@nyu.edu'):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access restricted to NYU email accounts"
-            )
+            logger.warning(f"Rejected non-NYU email: {email}")
+            return RedirectResponse(url="http://localhost:3000/?error=invalid_email")
             
         # Get or create user
         user_repo = UserRepository(db)
@@ -121,34 +119,54 @@ async def auth_callback(
             'name': user.name
         }
         
-        return RedirectResponse(url='/')
+        # Redirect to frontend home page
+        frontend_url = "http://localhost:3000"
+        return RedirectResponse(url=frontend_url)
     
     except OAuthError as e:
         logger.error(f"OAuth error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        return RedirectResponse(url="http://localhost:3000/?error=oauth_error")
     except Exception as e:
         logger.error(f"Callback error: {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Authentication failed: {str(e)}"
-        )
+        return RedirectResponse(url="http://localhost:3000/?error=authentication_failed")
+
+    # except OAuthError as e:
+    #     logger.error(f"OAuth error: {str(e)}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=str(e)
+    #     )
+    # except Exception as e:
+    #     logger.error(f"Callback error: {str(e)}")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #         detail=f"Authentication failed: {str(e)}"
+    #     )
 
 @router.get("/logout")
 async def logout(request: Request):
     """
-    Log out user by clearing session
+    Log out user by clearing session and redirecting to frontend
     
     Args:
         request: HTTP request
         
     Returns:
-        Redirect to home page
+        Redirect to frontend home page
     """
-    request.session.clear()
-    return RedirectResponse(url='/')
+    try:
+        # Clear the session
+        request.session.clear()
+        
+        # Redirect to frontend home page
+        frontend_url = "http://localhost:3000"
+        return RedirectResponse(url=frontend_url)
+    except Exception as e:
+        logger.error(f"Logout error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Logout failed: {str(e)}"
+        )
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user(

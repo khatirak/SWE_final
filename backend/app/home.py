@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, Query
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from ..utilities.models import ItemResponse, ItemCategory
-from ..db.repository import ItemRepository
-from ..db.database import get_database
+from utilities.models import ItemResponse, ItemCategory
+from db.repository import ItemRepository
+from db.database import get_database
+
 
 router = APIRouter(
     prefix="/home",
