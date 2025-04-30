@@ -97,6 +97,11 @@ async def search_listings(
     async for doc in cursor:
         doc["id"] = str(doc["_id"])
         doc["seller_id"] = str(doc["seller_id"])
+        
+        # Convert buyerId to string if it exists and is an ObjectId
+        if "buyerId" in doc and doc["buyerId"] is not None:
+            doc["buyerId"] = str(doc["buyerId"])
+            
         results.append(ItemResponse(**doc))
     
     logger.info(f"Found {len(results)} results")

@@ -91,6 +91,11 @@ class ItemRepository:
         if item:
             item["id"] = str(item["_id"])
             item["seller_id"] = str(item["seller_id"])
+            
+            # Convert buyerId to string if present
+            if "buyerId" in item and item["buyerId"] is not None:
+                item["buyerId"] = str(item["buyerId"])
+                
             return ItemResponse(**item)
         return None
 
@@ -104,6 +109,11 @@ class ItemRepository:
         if result:
             result["id"] = str(result["_id"])
             result["seller_id"] = str(result["seller_id"])
+            
+            # Convert buyerId to string if present
+            if "buyerId" in result and result["buyerId"] is not None:
+                result["buyerId"] = str(result["buyerId"])
+                
             return ItemResponse(**result)
         return None
     
@@ -116,6 +126,11 @@ class ItemRepository:
         if result:
             result["id"] = str(result["_id"])
             result["seller_id"] = str(result["seller_id"])
+            
+            # Convert buyerId to string if present
+            if "buyerId" in result and result["buyerId"] is not None:
+                result["buyerId"] = str(result["buyerId"])
+                
             return ItemResponse(**result)
         return None
 
@@ -129,6 +144,11 @@ class ItemRepository:
         async for doc in cursor:
             doc["id"] = str(doc["_id"])
             doc["seller_id"] = str(doc["seller_id"])
+            
+            # Convert buyerId to string if present
+            if "buyerId" in doc and doc["buyerId"] is not None:
+                doc["buyerId"] = str(doc["buyerId"])
+                
             listings.append(ItemResponse(**doc))
         return listings
     
@@ -178,8 +198,11 @@ class ItemRepository:
         async for doc in cursor:
             doc["id"] = str(doc["_id"])
             doc["seller_id"] = str(doc["seller_id"])
-            # doc["buyerId"] = str(doc["buyerId"])
-            # print(doc)
+            
+            # Convert buyerId to string if present
+            if "buyerId" in doc and doc["buyerId"] is not None:
+                doc["buyerId"] = str(doc["buyerId"])
+                
             results.append(ItemResponse(**doc))
 
         return results
@@ -200,6 +223,12 @@ class ItemRepository:
         listings = []
         async for doc in cursor:
             doc["id"] = str(doc["_id"])
+            doc["seller_id"] = str(doc["seller_id"])
+            
+            # Convert buyerId to string if present
+            if "buyerId" in doc and doc["buyerId"] is not None:
+                doc["buyerId"] = str(doc["buyerId"])
+                
             listings.append(ItemResponse(**doc))
 
         return listings
@@ -308,7 +337,7 @@ class ItemRepository:
             {
                 "$set": {
                     "status": "reserved",
-                    "buyerId": buyer_obj_id,
+                    "buyerId": str(buyer_obj_id),
                     "reservation_requests": updated_requests,
                     "reservation_count": len(updated_requests)
                 }
@@ -530,6 +559,11 @@ class ItemRepository:
         async for doc in cursor:
             doc["id"] = str(doc["_id"])
             doc["seller_id"] = str(doc["seller_id"])
+            
+            # Convert buyerId to string if present
+            if "buyerId" in doc and doc["buyerId"] is not None:
+                doc["buyerId"] = str(doc["buyerId"])
+                
             listings.append(ItemResponse(**doc))
         return listings
 
