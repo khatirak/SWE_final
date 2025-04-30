@@ -300,6 +300,17 @@ class ItemRepository:
             )
             return result.modified_count > 0
 
+    async def get_categories(self) -> List[str]:
+        """
+        Get all distinct categories from the database
+        
+        Returns:
+            List of category names
+        """
+        # Get distinct categories from the listings collection
+        categories = await self.collection.distinct("category")
+        return categories
+
     async def mark_item_as_sold(self, listing_id: str) -> bool:
         """
         Mark a listing as sold and remove all reservation requests.
