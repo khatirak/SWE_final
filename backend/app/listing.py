@@ -64,7 +64,6 @@ async def get_listing(
     Returns:
         Item details
     """
-    # Implementation placeholder
     return await repo.get_item(item_id)
 
 @router.put("/{item_id}", response_model=ItemResponse)
