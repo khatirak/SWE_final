@@ -18,6 +18,7 @@ const ListingDetail = () => {
   const [loadingReservations, setLoadingReservations] = useState(false);
   const [myReservation, setMyReservation] = useState(null);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [buyersInfo, setBuyersInfo] = useState({});
   
   // Fetch listing details and reservation info
   useEffect(() => {
@@ -56,6 +57,18 @@ const ListingDetail = () => {
       const reservationData = await apiService.listings.getReservations(id);
       console.log("Reservations data received:", reservationData);
       setReservations(reservationData);
+  
+      // Fetch buyer details in parallel
+      const buyers = await Promise.all(
+        reservationData.map(r => apiService.user.getById(r.buyer_id))
+      );
+  
+      const buyerMap = {};
+      buyers.forEach(buyer => {
+        buyerMap[buyer.id] = buyer;
+      });
+  
+      setBuyersInfo(buyerMap);
     } catch (error) {
       console.error('Error fetching reservations:', error);
     } finally {
@@ -371,7 +384,7 @@ const ListingDetail = () => {
                           className="d-flex justify-content-between align-items-center"
                         >
                           <div>
-                            <strong>Buyer ID:</strong> {reservation.buyer_id}
+                            <strong>Buyer:</strong> {buyersInfo[reservation.buyer_id]?.name || reservation.buyer_id}
                             <div><small>Requested: {new Date(reservation.requested_at).toLocaleString()}</small></div>
                           </div>
                           <div>

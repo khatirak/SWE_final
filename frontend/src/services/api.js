@@ -231,6 +231,13 @@ const apiService = {
         throw error;
       }
     },
+    getById: async (userId) => {
+      const response = await fetch(`/user/${userId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch user details');
+      }
+      return response.json();
+    },
   },
   
   // Home page endpoints
