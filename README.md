@@ -1,5 +1,16 @@
 # NYUAD Bazaar -  Instructions on how to run the app
 
+## Tests
+to run test
+```
+poetry shell
+pytest
+```
+
+to see coverage report (once you are in the shell)
+```
+pytest --cov=backend --cov-report=term-missing
+```
 ## Frontend
 When running on frontend, you'll get a message like
 ```
