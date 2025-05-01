@@ -31,7 +31,7 @@ const Number = () => {
     setIsSubmitting(true);
     
     try {
-      const response = await axios.post(`${API_URL}/users/update-phone`, 
+      const response = await axios.post(`${API_URL}/user/update-phone`, 
         { phoneNumber },
         { withCredentials: true }
       );
