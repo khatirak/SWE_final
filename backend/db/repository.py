@@ -555,6 +555,7 @@ class ItemRepository:
                 "$set": {
                     "status": ListingStatus.SOLD,
                     "reservation_requests": [],
+                    "reservation_count": 0
                 }
             }
         )
