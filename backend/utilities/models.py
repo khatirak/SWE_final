@@ -200,3 +200,12 @@ class MyRequestsResponse(BaseModel):
     requested_at: datetime
     expires_at: Optional[datetime] = None
     status: str
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    name: Optional[str] = None
+    phone: Optional[str] = None
+
+    class Config:
+        orm_mode = True

@@ -67,6 +67,13 @@ class UserRepository:
         except Exception as e:
             print(f"Error updating phone number: {str(e)}")
             return False
+    
+    async def get_user_by_id(self, user_id: str) -> Optional[UserResponse]:
+        user = await self.collection.find_one({"_id": ObjectId(user_id)})
+        if user:
+            user["id"] = str(user["_id"])
+            return UserResponse(**user)
+        return None
 
 class ItemRepository:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -632,5 +639,6 @@ class ItemRepository:
                 return [response]
 
         return []
+    
 
 

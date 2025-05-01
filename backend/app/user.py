@@ -1,4 +1,4 @@
-from ..utilities.models import ItemResponse, MyRequestsResponse
+from ..utilities.models import ItemResponse, MyRequestsResponse, UserResponse
 from ..db.repository import ItemRepository, UserRepository
 from ..db.database import get_database
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -74,7 +74,6 @@ async def update_phone(
     # Update phone number in database
     user_repo = UserRepository(db)
     success = await user_repo.update_phone(user['id'], phone_data.phoneNumber)
-    
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -82,3 +81,32 @@ async def update_phone(
         )
     
     return {"message": "Phone number updated successfully"}
+
+@router.get("/{user_id}/my_requests/{item_id}", response_model=List[MyRequestsResponse])
+async def get_my_requests(
+    user_id: str,
+    item_id: str,
+    repo: ItemRepository = Depends(get_item_repository),
+    user_repo: UserRepository = Depends(get_user_repository)
+):
+    return await repo.get_reservation_request(user_id, user_repo, item_id)
+
+@router.get("/{user_id}", response_model=UserResponse)
+async def get_user_by_id(
+    user_id: str,
+    repo: UserRepository = Depends(get_user_repository)
+):
+    """
+    Get user details by user ID 
+
+    Args:
+        user_id: ID of the user
+        repo: User repository dependency
+
+    Returns:
+        User details or 404 if not found
+    """
+    user = await repo.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
