@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, EmailStr, field_validator, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -35,13 +35,14 @@ class ImageModel(BaseModel):
     url: str
     thumbnail_url: Optional[str] = None
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "url": "https://storage.example.com/images/item123.jpg",
                 "thumbnail_url": "https://storage.example.com/thumbnails/item123.jpg"
             }
         }
+    )
 
 class ItemBase(BaseModel):
     """Base model for marketplace items"""
@@ -55,7 +56,7 @@ class ItemBase(BaseModel):
 
 class ItemCreate(ItemBase):
     """Model for creating a new item listing"""
-    images: List[str] = Field(..., min_items=2, max_items=10, description="Image URLs, 2-10 required [R-106]")
+    images: List[str] = Field(..., min_length=2, max_length=10, description="Image URLs, 2-10 required [R-106]")
 
 class ItemUpdate(BaseModel):
     """Model for updating an existing item"""
@@ -84,15 +85,16 @@ class ItemResponse(BaseModel):
     reservation_count: Optional[int] = 0
     buyerId: Optional[str] = None
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(
+        from_attributes=True
+    )
         
 class UserBase(BaseModel):
     """Base model for users"""
     email: EmailStr = Field(..., description="NYU email address")
     name: str = Field(..., description="User's full name")
     
-    @validator('email')
+    @field_validator('email')
     def email_must_be_nyu(cls, v):
         """Validate that email is from NYU domain"""
         if not v.endswith('@nyu.edu'):
@@ -109,9 +111,9 @@ class UserResponse(UserBase):
     created_at: datetime
     listings: List[str] = []
     phone: Optional[str] = None
-    
-    class Config:
-        schema_extra = {
+
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "60d21b4967d0d8992e610c85",
                 "email": "abc123@nyu.edu",
@@ -121,6 +123,8 @@ class UserResponse(UserBase):
                 "listings": ["60d21b4967d0d8992e610c85"]
             }
         }
+    )
+    
 
 class ReservationBase(BaseModel):
     """Base model for reservation requests"""
@@ -153,8 +157,8 @@ class ReservationResponse(ReservationBase):
     created_at: datetime
     status: str = "pending"  # pending, confirmed, declined, expired
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra = {
             "example": {
                 "id": "60d21b4967d0d8992e610c85",
                 "listing_id": "60d21b4967d0d8992e610c85",
@@ -163,6 +167,7 @@ class ReservationResponse(ReservationBase):
                 "status": "pending"
             }
         }
+    )
 
 class SearchFilters(BaseModel):
     """Model for search filters"""
@@ -176,8 +181,8 @@ class SearchFilters(BaseModel):
     sort_by: Optional[str] = "created_at"
     sort_order: Optional[str] = "desc"
     
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra = {
             "example": {
                 "keyword": "macbook",
                 "category": "electronics_gadgets",
@@ -190,6 +195,7 @@ class SearchFilters(BaseModel):
                 "sort_order": "asc"
             }
         }
+    )
 
 
 class MyRequestsResponse(BaseModel):
@@ -207,5 +213,5 @@ class UserResponse(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(
+        from_attributes=True)

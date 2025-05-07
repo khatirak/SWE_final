@@ -76,16 +76,16 @@ async def get_listing(
     repo: ItemRepository = Depends(get_item_repository)
 ):
     """
-    Get details for a specific listing
-    
-    Args:
-        item_id: ID of the item
-        db: Database connection
-        
-    Returns:
-        Item details
+    Get details for a specific listing.
+    Returns 404 if no such item exists.
     """
-    return await repo.get_item(item_id)
+    item = await repo.get_item(item_id)
+    if not item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Listing with id={item_id} not found"
+        )
+    return item
 
 @router.put("/{item_id}", response_model=ItemResponse)
 async def update_listing(
@@ -106,7 +106,7 @@ async def update_listing(
         Updated item
     """
     # Implementation placeholder
-    return await repo.update_item(item_id, item.dict(exclude_unset=True))
+    return await repo.update_item(item_id, item.model_dump(exclude_unset=True))
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_listing(

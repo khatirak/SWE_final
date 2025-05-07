@@ -15,7 +15,7 @@ class UserRepository:
         self.collection = db.users
 
     async def create_user(self, user: UserCreate) -> UserResponse:
-        user_dict = user.dict()
+        user_dict = user.model_dump()
         user_dict["created_at"] = datetime.utcnow()
         user_dict["listings"] = []
         
@@ -81,7 +81,7 @@ class ItemRepository:
         self.collection = db.Listings
 
     async def create_item(self, item: ItemCreate, seller_id: str) -> ItemResponse:
-        item_dict = item.dict()
+        item_dict = item.model_dump()
         item_dict["seller_id"] = ObjectId(seller_id)
         item_dict["created_at"] = datetime.now(timezone.utc)
         item_dict["status"] = ListingStatus.AVAILABLE
