@@ -499,6 +499,12 @@ class ItemRepository:
         if listing_status:
             listing_status = ListingStatus(listing_status)
 
+        requests = listing.get("reservation_requests", [])
+        
+        # if buyer never requested, fail early
+        if not any(str(r["buyer_id"]) == buyer_id for r in requests):
+            return False
+        
         # For available listing, just delete the reservation (doesn't matter who initiated the cancellation)
         if listing_status == ListingStatus.AVAILABLE:
             result = await self.collection.update_one(
@@ -515,8 +521,10 @@ class ItemRepository:
             new_expiration = (now + timedelta(days=7)).isoformat()
 
             updated_requests = []
-            for r in listing.get("reservation_requests", []):
+            request_exists = False
+            for r in requests:
                 if str(r["buyer_id"]) == buyer_id:
+                    request_exists = True
                     continue
                 r["expires_at"] = new_expiration
                 updated_requests.append(r)
@@ -532,7 +540,7 @@ class ItemRepository:
                     "$inc": {"reservation_count": -1}
                 }
             )
-            return result.modified_count > 0
+            return result.modified_count > 0 and request_exists
 
     async def get_categories(self) -> List[str]:
         """

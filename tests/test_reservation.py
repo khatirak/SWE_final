@@ -76,6 +76,7 @@ async def test_cancel_reservation(ac: AsyncClient):
         "title": "Cancel Reservation Test",
         "description": "Test cancel",
         "price": 180,
+        "status": "available",
         "condition": "good",
         "category": "electronics_gadgets",
         "tags": ["cancel"],

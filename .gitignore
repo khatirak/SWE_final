@@ -49,3 +49,5 @@ poetry.lock
 # Node modules
 node_modules/
 */node_modules/
+
+.coverage
