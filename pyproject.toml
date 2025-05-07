@@ -27,3 +27,18 @@ start-prod = "uvicorn.main:main"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api" 
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+minversion = "6.0"
+addopts = "-q"
+# your other pytest settings…
+
+filterwarnings = [
+  # ignore *all* DeprecationWarning
+  "ignore::DeprecationWarning",
+
+  # ignore the pytest-asyncio event_loop fixture deprecation
+  "ignore:The event_loop fixture provided by pytest-asyncio has been redefined:DeprecationWarning",
+]

@@ -25,7 +25,6 @@ def get_user_repository(db = Depends(get_database)) -> UserRepository:
 @router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
 async def create_listing(
     request: Request,
-    db: AsyncIOMotorDatabase = Depends(get_database),
     repo: ItemRepository = Depends(get_item_repository),
     current_user = Depends(get_current_user)
 ):
@@ -72,7 +71,6 @@ async def create_listing(
 @router.get("/{item_id}", response_model=ItemResponse)
 async def get_listing(
     item_id: str,
-    db: AsyncIOMotorDatabase = Depends(get_database),
     repo: ItemRepository = Depends(get_item_repository)
 ):
     """
@@ -91,7 +89,6 @@ async def get_listing(
 async def update_listing(
     item_id: str,
     item: ItemUpdate,
-    db: AsyncIOMotorDatabase = Depends(get_database),
     repo: ItemRepository = Depends(get_item_repository)
 ):
     """
@@ -111,7 +108,6 @@ async def update_listing(
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_listing(
     item_id: str,
-    db: AsyncIOMotorDatabase = Depends(get_database),
     repo: ItemRepository = Depends(get_item_repository)
 ):
     """
@@ -148,7 +144,6 @@ async def upload_images(
 async def update_listing_status(
     item_id: str,
     status: ListingStatus,
-    db: AsyncIOMotorDatabase = Depends(get_database),
     repo: ItemRepository = Depends(get_item_repository)
 ):
     """
@@ -174,7 +169,6 @@ async def update_listing_status(
 async def request_reservation(
     item_id: str,
     user_id: str,
-    db: AsyncIOMotorDatabase = Depends(get_database),
     repo: ItemRepository = Depends(get_item_repository)
 ):
     """
@@ -190,7 +184,6 @@ async def request_reservation(
 async def confirm_reservation(
     item_id: str,
     confirmation: ReservationConfirmation,
-    db: AsyncIOMotorDatabase = Depends(get_database),
     repo: ItemRepository = Depends(get_item_repository)
 ):
     """
@@ -204,7 +197,6 @@ async def confirm_reservation(
 @router.get("/{item_id}/reservations", response_model=List[ReservationInfo], status_code=200)
 async def get_reservations(
     item_id: str,
-    db: AsyncIOMotorDatabase = Depends(get_database),
     repo: ItemRepository = Depends(get_item_repository),
     user_repo: ItemRepository = Depends(get_user_repository)
 ):
@@ -220,7 +212,6 @@ async def get_reservations(
 async def cancel_reservation_request(
     item_id: str,
     buyer_id: str,
-    db: AsyncIOMotorDatabase = Depends(get_database),
     repo: ItemRepository = Depends(get_item_repository)
 ):
     success = await repo.cancel_reservation(item_id, buyer_id)
@@ -231,7 +222,6 @@ async def cancel_reservation_request(
 @router.post("/{item_id}/sold", status_code=200)
 async def mark_listing_as_sold(
     item_id: str,
-    db: AsyncIOMotorDatabase = Depends(get_database),
     repo: ItemRepository = Depends(get_item_repository)
 ):
     """
