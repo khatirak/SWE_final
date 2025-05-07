@@ -57,24 +57,20 @@ def test_db_setup(event_loop):
     )
 
 # ─── 3) Ensure each test starts with a clean listings collection ─────────────
-@pytest.fixture(autouse=True)
-def clear_listings_db(event_loop):
-    """
-    Wipe the listings collection before and after each test,
-    using the shared test database on Atlas.
-    """
-    # connect directly to the test DB
-    mongo_uri = os.getenv("MONGO_DETAILS")
-    client = AsyncIOMotorClient(mongo_uri)
+
+@pytest_asyncio.fixture(autouse=True)
+async def clear_listings_db():
+    client = AsyncIOMotorClient(os.getenv("MONGO_DETAILS"))
     db = client["nyu_marketplace_test"]
 
-    print("🧪 USING DB:", db.name)  # ← THIS
+    # clear before
+    await db.Listings.delete_many({})
 
-    # clear before test
-    event_loop.run_until_complete(db.listings.delete_many({}))
     yield
-    # clear after test
-    event_loop.run_until_complete(db.listings.delete_many({}))
+
+    # clear after
+    await db.Listings.delete_many({})
+    
     client.close()
 
 # ─── 4) Override authentication for all tests) Override authentication for all tests ────────────────────────────────

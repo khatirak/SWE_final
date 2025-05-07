@@ -31,6 +31,7 @@ class UserRepository:
         return None
 
     async def get_user_by_id(self, user_id: str) -> Optional[UserResponse]:
+        print(f"Using {self.db.name} ============")
         try:
             user = await self.collection.find_one({"_id": ObjectId(user_id)})
             if user:
@@ -67,6 +68,7 @@ class UserRepository:
         except Exception as e:
             print(f"Error updating phone number: {str(e)}")
             return False
+        
     
     async def get_user_by_id(self, user_id: str) -> Optional[UserResponse]:
         user = await self.collection.find_one({"_id": ObjectId(user_id)})
@@ -146,6 +148,7 @@ class ItemRepository:
         return result.deleted_count > 0
     
     async def get_items_by_seller_id(self, seller_id: str) -> List[ItemResponse]:
+        count = await self.db.Listings.count_documents({})
         cursor = self.collection.find({"seller_id": ObjectId(seller_id)})
         listings = []
         async for doc in cursor:
@@ -568,20 +571,6 @@ class ItemRepository:
             }
         )
         return result.modified_count > 0
-    
-    async def get_items_by_seller_id(self, seller_id: str) -> List[ItemResponse]:
-        cursor = self.collection.find({"seller_id": ObjectId(seller_id)})
-        listings = []
-        async for doc in cursor:
-            doc["id"] = str(doc["_id"])
-            doc["seller_id"] = str(doc["seller_id"])
-            
-            # Convert buyerId to string if present
-            if "buyerId" in doc and doc["buyerId"] is not None:
-                doc["buyerId"] = str(doc["buyerId"])
-                
-            listings.append(ItemResponse(**doc))
-        return listings
 
     async def get_items_requested_by_user(self, buyer_id: str, user_repo: "UserRepository") -> List[MyRequestsResponse]:
         cursor = self.collection.find({

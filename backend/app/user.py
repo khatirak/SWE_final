@@ -18,6 +18,7 @@ router = APIRouter(
 
 def get_item_repository(db = Depends(get_database)) -> ItemRepository:
     return ItemRepository(db)
+
 def get_user_repository(db = Depends(get_database)) -> UserRepository:
     return UserRepository(db)
 
@@ -51,7 +52,7 @@ async def get_my_requests(
 async def update_phone(
     phone_data: PhoneUpdate,
     request: Request,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    user_repo: UserRepository = Depends(get_user_repository)
 ):
     """
     Update user's phone number
@@ -72,7 +73,6 @@ async def update_phone(
         )
     
     # Update phone number in database
-    user_repo = UserRepository(db)
     success = await user_repo.update_phone(user['id'], phone_data.phoneNumber)
     if not success:
         raise HTTPException(
