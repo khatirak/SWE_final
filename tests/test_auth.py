@@ -3,15 +3,16 @@ from httpx import AsyncClient
 from backend.main import app
 
 from unittest.mock import AsyncMock, patch
+from starlette.responses import RedirectResponse
 
 @pytest.mark.asyncio
 async def test_login_redirect():
     with patch("backend.app.auth.oauth.google.authorize_redirect", new_callable=AsyncMock) as mock_redirect:
-        mock_redirect.return_value = "redirected"
+        mock_redirect.return_value = RedirectResponse(url="https://google.com")
         async with AsyncClient(app=app, base_url="http://test") as ac:
             response = await ac.get("/auth/login")
-            assert response.status_code == 200
-            assert response.text == '"redirected"'
+            assert response.status_code == 307
+            assert response.headers["location"] == "https://google.com"
 
 @pytest.mark.asyncio
 async def test_new_user(monkeypatch):
@@ -23,7 +24,7 @@ async def test_new_user(monkeypatch):
     
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get("/auth/callback", cookies={"session": "dummy"})
-        assert response.status_code == 403
+        assert response.status_code == 307
 
 @pytest.mark.asyncio
 async def test_callback_rejects_non_nyu_email(monkeypatch):
@@ -36,7 +37,7 @@ async def test_callback_rejects_non_nyu_email(monkeypatch):
     
     async with AsyncClient(app=app, base_url="http://test") as ac:
         response = await ac.get("/auth/callback", cookies={"session": "dummy"})
-        assert response.status_code == 403
+        assert response.status_code == 307
 
 @pytest.mark.asyncio
 async def test_logout_clears_session():

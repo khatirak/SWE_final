@@ -71,8 +71,8 @@ async def search_listings(
         normalized_condition = re.escape(normalize_condition(condition))
         filter_dict["condition"] = {"$regex": f"^{normalized_condition}$", "$options": "i"}
     
-    if status and status.lower() != "all":
-        filter_dict["status"] = {"$regex": f"^{status}$", "$options": "i"}
+    if status:
+        filter_dict["status"] = status.lower().strip()
     
     # Price range filter
     price_filter = {}

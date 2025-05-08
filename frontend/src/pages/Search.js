@@ -352,7 +352,7 @@ const mockListings = [
                     <option value="available">Available Only</option>
                     <option value="reserved">Reserved Only</option>
                     <option value="sold">Sold Only</option>
-                    <option value="ALL">All</option>
+                    <option value="">All</option>
                   </Form.Select>
                 </Form.Group>
                 
