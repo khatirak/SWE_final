@@ -110,9 +110,9 @@ const CreateListing = () => {
 
       try {
         console.log('Creating listing with data:', listingData);
-        await apiService.listings.create(listingData);
+        const newListing = await apiService.listings.create(listingData);
         console.log('Listing created successfully');
-        navigate('/search');
+        navigate(`/listing/${newlisting["id"]}`);
       } catch (error) {
         console.error('Error creating listing:', error);
         setSubmitError(error.response?.data?.message || 'Failed to create listing. Please try again.');
