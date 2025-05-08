@@ -82,7 +82,7 @@ async def search_listings(
         price_filter["$lte"] = max_price
     if price_filter:
         filter_dict["price"] = price_filter
-    
+
     # Create sort dict - default to sorting by creation date, newest first
     sort_dict = {sort_by: sort_order}
     

@@ -31,7 +31,6 @@ class UserRepository:
         return None
 
     async def get_user_by_id(self, user_id: str) -> Optional[UserResponse]:
-        print(f"Using {self.db.name} ============")
         try:
             user = await self.collection.find_one({"_id": ObjectId(user_id)})
             if user:
@@ -68,14 +67,6 @@ class UserRepository:
         except Exception as e:
             print(f"Error updating phone number: {str(e)}")
             return False
-        
-    
-    async def get_user_by_id(self, user_id: str) -> Optional[UserResponse]:
-        user = await self.collection.find_one({"_id": ObjectId(user_id)})
-        if user:
-            user["id"] = str(user["_id"])
-            return UserResponse(**user)
-        return None
 
 class ItemRepository:
     def __init__(self, db: AsyncIOMotorDatabase):
@@ -162,61 +153,6 @@ class ItemRepository:
             listings.append(ItemResponse(**doc))
         return listings
     
-    async def search_items(self, filters: SearchFilters) -> List[ItemResponse]:
-        query = {}
-
-        # Keyword-based search (title or description)
-        if filters.keyword:
-            query["$or"] = [
-                {"title": {"$regex": filters.keyword, "$options": "i"}},
-                {"description": {"$regex": filters.keyword, "$options": "i"}}
-            ]
-
-        # Category filter
-        if filters.category:
-            query["category"] = filters.category
-
-        # Price range filter
-        if filters.min_price is not None or filters.max_price is not None:
-            query["price"] = {}
-            if filters.min_price is not None:
-                query["price"]["$gte"] = filters.min_price
-            if filters.max_price is not None:
-                query["price"]["$lte"] = filters.max_price
-
-        # Condition filter
-        if filters.condition:
-            query["condition"] = filters.condition
-
-        # Status filter
-        if filters.status:
-            query["status"] = filters.status
-
-        # Tags filtering (match at least one tag)
-        if filters.tags:
-            query["tags"] = {"$in": filters.tags}
-
-        # Sorting
-        sort_field = filters.sort_by or "created_at"
-        sort_order = ASCENDING if filters.sort_order == "asc" else DESCENDING
-
-        # Execute query
-        cursor = self.collection.find(query).sort(sort_field, sort_order)
-
-        # Return results as ItemResponse
-        results = []
-        async for doc in cursor:
-            doc["id"] = str(doc["_id"])
-            doc["seller_id"] = str(doc["seller_id"])
-            
-            # Convert buyerId to string if present
-            if "buyerId" in doc and doc["buyerId"] is not None:
-                doc["buyerId"] = str(doc["buyerId"])
-                
-            results.append(ItemResponse(**doc))
-
-        return results
-
     async def get_recent(self, limit: int = 10, category: Optional[ItemCategory] = None) -> List[ItemResponse]:
         query = {}
 
@@ -307,17 +243,7 @@ class ItemRepository:
 
         # Check if we have any reservation requests
         if not listing.get("reservation_requests"):
-            print("No reservation requests found, creating one")
-            # Create a new reservation request
-            now = datetime.now(timezone.utc)
-            reservation_entry = {
-                "buyer_id": buyer_obj_id,
-                "requested_at": now.isoformat(),
-                "expires_at": (now + timedelta(days=7)).isoformat(),
-                "status": "confirmed"
-            }
-            updated_requests = [reservation_entry]
-            found = True
+            return False
         else:
             # Process existing requests
             for r in listing.get("reservation_requests", []):
@@ -331,15 +257,8 @@ class ItemRepository:
 
         if not found:
             print(f"No matching reservation request found for buyer {buyer_id}")
-            # If we didn't find the buyer in the requests but want to confirm anyway
-            now = datetime.now(timezone.utc)
-            reservation_entry = {
-                "buyer_id": buyer_obj_id,
-                "requested_at": now.isoformat(),
-                "expires_at": (now + timedelta(days=7)).isoformat(),
-                "status": "confirmed"
-            }
-            updated_requests.append(reservation_entry)
+            # If we didn't find the buyer return error
+            return False
 
         # Update the listing with the new status and reservation data
         result = await self.collection.update_one(
@@ -377,46 +296,6 @@ class ItemRepository:
         print(f"Reservation requests: {listing.get('reservation_requests', [])}")
         print(f"Buyer ID: {listing.get('buyerId')}")
 
-        # If listing status is RESERVED but there are no reservation_requests, create a dummy one
-        if listing_status == ListingStatus.RESERVED and listing.get("buyerId") and not listing.get("reservation_requests"):
-            buyer_id = listing.get("buyerId")
-            print(f"Creating dummy reservation for buyer: {buyer_id}")
-            
-            # Use the UserRepository to get the user instance
-            user = await user_repo.get_user_by_id(str(buyer_id))
-            buyer_phone = user.phone if user else None
-            
-            # Create a dummy reservation record
-            valid_reservations.append({
-                "buyer_id": str(buyer_id),
-                "requested_at": datetime.now(timezone.utc),
-                "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
-                "status": "confirmed",
-                "buyer_phone": buyer_phone
-            })
-            
-            # Also create and store proper reservation_requests array in the database
-            now = datetime.now(timezone.utc)
-            reservation_entry = {
-                "buyer_id": buyer_id,
-                "requested_at": now.isoformat(),
-                "expires_at": (now + timedelta(days=7)).isoformat(),
-                "status": "confirmed"
-            }
-            
-            # Update the listing with proper reservation data
-            await self.collection.update_one(
-                {"_id": ObjectId(listing_id)},
-                {
-                    "$set": {
-                        "reservation_requests": [reservation_entry],
-                        "reservation_count": 1
-                    }
-                }
-            )
-            
-            return valid_reservations
-            
         # If listing is reserved and has a confirmed buyer
         if listing_status == ListingStatus.RESERVED and listing.get("buyerId"):
             buyer_id = listing["buyerId"]
@@ -439,35 +318,6 @@ class ItemRepository:
                         "buyer_phone": buyer_phone
                     })
                     break  # Only one confirmed reservation
-            
-            # If no request found but we have buyerId, create a dummy request
-            if not found_request:
-                valid_reservations.append({
-                    "buyer_id": str(buyer_id),
-                    "requested_at": datetime.now(timezone.utc),
-                    "expires_at": datetime.now(timezone.utc) + timedelta(days=7),
-                    "status": "confirmed",
-                    "buyer_phone": buyer_phone
-                })
-                
-                # Also update the database with correct reservation data
-                now = datetime.now(timezone.utc)
-                reservation_entry = {
-                    "buyer_id": buyer_id,
-                    "requested_at": now.isoformat(),
-                    "expires_at": (now + timedelta(days=7)).isoformat(),
-                    "status": "confirmed"
-                }
-                
-                await self.collection.update_one(
-                    {"_id": ObjectId(listing_id)},
-                    {
-                        "$set": {
-                            "reservation_requests": [reservation_entry],
-                            "reservation_count": 1
-                        }
-                    }
-                )
         else:
             # Listing is available — return pending reservations
             for r in listing.get("reservation_requests", []):
