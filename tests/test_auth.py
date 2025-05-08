@@ -13,6 +13,17 @@ async def test_login_redirect():
             assert response.status_code == 200
             assert response.text == '"redirected"'
 
+@pytest.mark.asyncio
+async def test_new_user(monkeypatch):
+    new_userinfo = {
+        "email": "newguy@nyu.edu",
+        "email_verified": True,
+    }
+    monkeypatch.setattr("backend.app.auth.oauth.google.authorize_access_token", AsyncMock(return_value={"userinfo": new_userinfo}))
+    
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        response = await ac.get("/auth/callback", cookies={"session": "dummy"})
+        assert response.status_code == 403
 
 @pytest.mark.asyncio
 async def test_callback_rejects_non_nyu_email(monkeypatch):

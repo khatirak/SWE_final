@@ -34,17 +34,10 @@ async def test_get_user_by_id_success(ac: AsyncClient, event_loop):
     assert data["name"] == "Foo Bar"
     assert data["phone"] == "1234567890"
 
-
-@pytest.mark.asyncio
-async def test_get_user_by_id_not_found(ac: AsyncClient):
-    response = await ac.get(f"/user/{NON_EXISTENT_ID}")
-    assert response.status_code == 404
-
-
 @pytest.mark.asyncio
 async def test_get_my_listings(ac: AsyncClient):
 
-     # sure that DB is empty?
+    # sure that DB is empty?
     from motor.motor_asyncio import AsyncIOMotorClient
     client = AsyncIOMotorClient(os.getenv("MONGO_DETAILS"))
     db = client["nyu_marketplace_test"]
@@ -139,6 +132,10 @@ async def test_get_my_request_for_item(ac: AsyncClient):
     assert len(reqs) == 1
     assert reqs[0]["listing_id"] == item_id
 
+@pytest.mark.asyncio
+async def test_get_user_by_id_not_found(ac: AsyncClient):
+    response = await ac.get(f"/user/{NON_EXISTENT_ID}")
+    assert response.status_code == 404
 
 @pytest.mark.asyncio
 async def test_update_phone_unauthenticated(ac: AsyncClient):
