@@ -487,6 +487,3 @@ class ItemRepository:
                 return [response]
 
         return []
-    
-
-

@@ -1,5 +1,6 @@
 import os
 import asyncio
+import io
 import pytest
 import pytest_asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -56,6 +57,17 @@ async def test_update_listing(ac):
     body = r.json()
     assert body["title"] == "Updated Title"
     assert body["price"] == 150
+    
+# @pytest.mark.asyncio
+# async def test_upload_images(ac):
+#     listing_id = await create_test_listing(ac)
+#     file1 = {"files":"img3.png", "type":"image/png"}
+#     file2 = {"files":"img4.png", "type":"image/png"}
+#     files = [file1, file2]
+#     r = await ac.post(f"/listings/{listing_id}/images", files)
+#     assert r.status_code == 200
+#     body = r.json()
+#     assert body.files == files[files]
 
 @pytest.mark.asyncio
 async def test_delete_listing(ac):

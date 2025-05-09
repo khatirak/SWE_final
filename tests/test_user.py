@@ -146,12 +146,12 @@ async def test_update_phone_unauthenticated(ac: AsyncClient):
 
 # @pytest.mark.asyncio
 # async def test_update_phone_success(ac: AsyncClient):
-#     # from motor.motor_asyncio import AsyncIOMotorClient
-#     # import os
-#     # client = AsyncIOMotorClient(os.getenv("MONGO_DETAILS"))
-#     # db = client["nyu_marketplace_test"]
+#     from motor.motor_asyncio import AsyncIOMotorClient
+#     import os
+#     client = AsyncIOMotorClient(os.getenv("MONGO_DETAILS"))
+#     db = client["nyu_marketplace_test"]
 #     # await db.users.insert_one({
-#     #     "_id": ObjectId(TEST_USER_ID),
+#     #     "_id": ObjectId(OTHER_USER_ID),
 #     #     "email": "foo@example.com",
 #     #     "name": "Foo Bar",
 #     #     "phone": "1234567890"
