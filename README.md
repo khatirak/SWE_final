@@ -1,5 +1,25 @@
 # NYUAD Bazaar -  Instructions on how to run the app
 
+## Frontend
+```
+cd frontend
+npm install (ONLY AFTER A PULL FOR THE FIRST TIME - ONLY NEEDED ONCE)
+npm start
+```
+When running on frontend, you'll get a message like
+```
+You can now view frontend in the browser.
+
+  Local:            http://localhost:3000
+  On Your Network:  http://10.228.253.234:3000
+```
+Run the 'on your network' option on your phone to see app view
+## Backend
+ Be in the root directory
+ ```
+uvicorn backend.main:app --reload
+ ```
+
 ## Tests
 to run test
 ```
@@ -11,26 +31,6 @@ to see coverage report (once you are in the shell)
 ```
 pytest --cov=backend --cov-report=term-missing
 ```
-## Frontend
-When running on frontend, you'll get a message like
-```
-You can now view frontend in the browser.
-
-  Local:            http://localhost:3000
-  On Your Network:  http://10.228.253.234:3000
-```
-Run the 'on your network' option on your phone to see app view
-```
-cd frontend
-npm install (ONLY AFTER A PULL FOR THE FIRST TIME - ONLY NEEDED ONCE)
-npm start
-```
-## Backend
- Be in the root directory
- ```
-uvicorn backend.main:app --reload
- ```
-
 ---
 # Reservation API Endpoints
 

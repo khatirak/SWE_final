@@ -142,3 +142,25 @@ async def test_update_phone_unauthenticated(ac: AsyncClient):
     # no session => HTTP 401
     resp = await ac.post("/user/update-phone", json={"phoneNumber": "9999999999"})
     assert resp.status_code == 401
+
+
+# @pytest.mark.asyncio
+# async def test_update_phone_success(ac: AsyncClient):
+#     from motor.motor_asyncio import AsyncIOMotorClient
+#     import os
+#     client = AsyncIOMotorClient(os.getenv("MONGO_DETAILS"))
+#     db = client["nyu_marketplace_test"]
+#     # await db.users.insert_one({
+#     #     "_id": ObjectId(OTHER_USER_ID),
+#     #     "email": "foo@example.com",
+#     #     "name": "Foo Bar",
+#     #     "phone": "1234567890"
+#     # })
+
+#     response = await ac.post("/user/update-phone", json={"phoneNumber": "9999999999"})
+#     assert response.status_code == 200
+#      # 2) exercise the endpoint
+#     response = await ac.get(f"/user/{TEST_USER_ID}")
+#     assert response.status_code == 200
+#     data = response.json()
+#     assert data["phone"] == "9999999999"

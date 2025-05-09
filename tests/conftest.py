@@ -32,10 +32,10 @@ def test_db_setup(event_loop):
     client = AsyncIOMotorClient(mongo_uri)
     test_db = client["nyu_marketplace_test"]
 
-    # 2) Override get_database → nyu_marketplace_test
+    # 2) Override get_database -> nyu_marketplace_test
     import backend.db.database
     async def override_get_database():
-        print("✅ override_get_database was used")
+        print("override_get_database was used")
         yield test_db
 
     app.dependency_overrides[

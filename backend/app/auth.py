@@ -10,7 +10,6 @@ import logging
 from backend.utilities.models import UserCreate, UserResponse
 from backend.db.repository import UserRepository
 from backend.db.database import get_database
-from backend.utilities.helpers import validate_nyu_email
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
