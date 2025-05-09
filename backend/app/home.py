@@ -39,36 +39,36 @@ async def get_recent_listings(
     # Implementation placeholder
     return await repo.get_recent(limit, category)
 
-@router.get("/featured", response_model=List[ItemResponse])
-async def get_featured_listings(
-    limit: int = 5,
-    db: AsyncIOMotorDatabase = Depends(get_database)
-):
-    """
-    Get featured listings for home page
+# @router.get("/featured", response_model=List[ItemResponse])
+# async def get_featured_listings(
+#     limit: int = 5,
+#     db: AsyncIOMotorDatabase = Depends(get_database)
+# ):
+#     """
+#     Get featured listings for home page
     
-    Args:
-        limit: Maximum number of items
-        db: Database connection
+#     Args:
+#         limit: Maximum number of items
+#         db: Database connection
         
-    Returns:
-        List of featured items
-    """
-    # Implementation placeholder
-    pass
+#     Returns:
+#         List of featured items
+#     """
+#     # Implementation placeholder
+#     pass
 
-@router.get("/stats")
-async def get_marketplace_stats(
-    db: AsyncIOMotorDatabase = Depends(get_database)
-):
-    """
-    Get marketplace statistics
+# @router.get("/stats")
+# async def get_marketplace_stats(
+#     db: AsyncIOMotorDatabase = Depends(get_database)
+# ):
+#     """
+#     Get marketplace statistics
     
-    Args:
-        db: Database connection
+#     Args:
+#         db: Database connection
         
-    Returns:
-        Statistics about the marketplace
-    """
-    # Implementation placeholder
-    pass
+#     Returns:
+#         Statistics about the marketplace
+#     """
+#     # Implementation placeholder
+#     pass
