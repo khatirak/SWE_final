@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "backend"}]
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 fastapi = "^0.109.2"
 uvicorn = "^0.27.1"
 motor = "^3.3.2"

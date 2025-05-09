@@ -1,24 +1,30 @@
 # NYUAD Bazaar -  Instructions on how to run the app
 
+To successfully run the website, you should both run frontend and backend.
+## Backend
+Be in project root directory
+ ```
+poetry shell
+uvicorn backend.main:app --reload
+ ```
+
 ## Frontend
+In another terminal window:
 ```
 cd frontend
-npm install (ONLY AFTER A PULL FOR THE FIRST TIME - ONLY NEEDED ONCE)
+npm install (only needed to run once)
 npm start
 ```
-When running on frontend, you'll get a message like
+The website window should opent automatically, or follow the link provided. Here's an example message:
 ```
 You can now view frontend in the browser.
 
   Local:            http://localhost:3000
   On Your Network:  http://10.228.253.234:3000
 ```
-Run the 'on your network' option on your phone to see app view
-## Backend
- Be in the root directory
- ```
-uvicorn backend.main:app --reload
- ```
+To see the mobile view, run the 'on your network' option on your phone. 
+
+Note: to ensure successful log in the website, make sure you have an active session with nyu account in your browser.
 
 ## Tests
 to run test
